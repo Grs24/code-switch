@@ -73,8 +73,11 @@ func main() {
 	claudeSettings := services.NewClaudeSettingsService(providerRelay.Addr())
 	codexSettings := services.NewCodexSettingsService(providerRelay.Addr())
 	logService := services.NewLogService()
-	appSettings := services.NewAppSettingsService()
+	autoStartService := services.NewAutoStartService()
+	appSettings := services.NewAppSettingsService(autoStartService)
 	mcpService := services.NewMCPService()
+	skillService := services.NewSkillService()
+	importService := services.NewImportService(providerService, mcpService)
 	dockService := dock.New()
 	versionService := NewVersionService()
 
@@ -95,7 +98,7 @@ func main() {
 	// 'Bind' is a list of Go struct instances. The frontend has access to the methods of these instances.
 	// 'Mac' options tailor the application when running an macOS.
 	app := application.New(application.Options{
-		Name:        "AI Code Studio",
+		Name:        "Code Switch",
 		Description: "Claude Code and Codex provier manager",
 		Services: []application.Service{
 			application.NewService(appservice),
@@ -106,6 +109,8 @@ func main() {
 			application.NewService(logService),
 			application.NewService(appSettings),
 			application.NewService(mcpService),
+			application.NewService(skillService),
+			application.NewService(importService),
 			application.NewService(dockService),
 			application.NewService(versionService),
 			application.NewService(authService),
@@ -141,11 +146,30 @@ func main() {
 		BackgroundColour: application.NewRGB(27, 38, 54),
 		URL:              "/",
 	})
-	showMainWindow := func(withFocus bool) {
-		mainWindow.Center()
-		mainWindow.Show()
-		if withFocus && mainWindow.IsVisible() {
+	var mainWindowCentered bool
+	focusMainWindow := func() {
+		if runtime.GOOS == "windows" {
+			mainWindow.SetAlwaysOnTop(true)
 			mainWindow.Focus()
+			go func() {
+				time.Sleep(150 * time.Millisecond)
+				mainWindow.SetAlwaysOnTop(false)
+			}()
+			return
+		}
+		mainWindow.Focus()
+	}
+	showMainWindow := func(withFocus bool) {
+		if !mainWindowCentered {
+			mainWindow.Center()
+			mainWindowCentered = true
+		}
+		if mainWindow.IsMinimised() {
+			mainWindow.UnMinimise()
+		}
+		mainWindow.Show()
+		if withFocus {
+			focusMainWindow()
 		}
 		handleDockVisibility(dockService, true)
 	}
@@ -170,15 +194,14 @@ func main() {
 	})
 
 	systray := app.SystemTray.New()
-	// systray.SetLabel("AI Code Studio")
-	systray.SetTooltip("AI Code Studio")
+	// systray.SetLabel("Code Switch")
+	systray.SetTooltip("Code Switch")
 	if lightIcon := loadTrayIcon("assets/icon.png"); len(lightIcon) > 0 {
 		systray.SetIcon(lightIcon)
 	}
 	if darkIcon := loadTrayIcon("assets/icon-dark.png"); len(darkIcon) > 0 {
 		systray.SetDarkModeIcon(darkIcon)
 	}
-	systray.AttachWindow(mainWindow).WindowOffset(8).WindowDebounce(200 * time.Millisecond)
 
 	trayMenu := application.NewMenu()
 	trayMenu.Add("显示主窗口").OnClick(func(ctx *application.Context) {
@@ -188,6 +211,16 @@ func main() {
 		app.Quit()
 	})
 	systray.SetMenu(trayMenu)
+
+	systray.OnClick(func() {
+		if !mainWindow.IsVisible() {
+			showMainWindow(true)
+			return
+		}
+		if !mainWindow.IsFocused() {
+			focusMainWindow()
+		}
+	})
 
 	appservice.SetApp(app)
 	authService.SetApp(app)

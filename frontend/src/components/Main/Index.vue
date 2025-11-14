@@ -5,7 +5,7 @@
       <button
         class="ghost-icon github-icon"
         :class="{ 'github-upgrade': hasUpdateAvailable }"
-        :aria-label="hasUpdateAvailable ? t('components.main.controls.githubUpdate') : t('components.main.controls.github')"
+        :data-tooltip="hasUpdateAvailable ? t('components.main.controls.githubUpdate') : t('components.main.controls.github')"
         @click="openGitHub"
       >
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -19,7 +19,11 @@
           />
         </svg>
       </button>
-      <button class="ghost-icon" :aria-label="t('components.main.controls.theme')" @click="toggleTheme">
+      <button
+        class="ghost-icon"
+        :data-tooltip="t('components.main.controls.theme')"
+        @click="toggleTheme"
+      >
         <svg v-if="themeIcon === 'sun'" viewBox="0 0 24 24" aria-hidden="true">
           <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.5" fill="none" />
           <path
@@ -40,6 +44,7 @@
           />
         </svg>
       </button>
+    <!-- 登录/用户信息按钮 -->
       <button class="login-button" @click="handleLoginClick">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path
@@ -53,7 +58,13 @@
         </svg>
         <span>{{ userInfo ? t('components.main.controls.profile') : t('components.main.controls.login') }}</span>
       </button>
-      <button class="ghost-icon" :aria-label="t('components.main.controls.settings')" @click="goToSettings">
+
+      <!-- 设置按钮 -->
+      <button
+        class="ghost-icon"
+        :data-tooltip="t('components.main.controls.settings')"
+        @click="goToSettings"
+      >
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path
             d="M12 15a3 3 0 100-6 3 3 0 000 6z"
@@ -113,6 +124,7 @@
         </div>
         <div
           v-if="usageTooltip.visible"
+          ref="tooltipRef"
           class="contrib-tooltip"
           :class="usageTooltip.placement"
           :style="{ left: `${usageTooltip.left}px`, top: `${usageTooltip.top}px` }"
@@ -158,10 +170,48 @@
               <span class="relay-tooltip-content">{{ currentProxyLabel }} · {{ t('components.main.relayToggle.tooltip') }}</span>
             </div>
           </div>
-          <button class="ghost-icon" :aria-label="t('components.main.controls.mcp')" @click="goToMcp">
+          <button
+            class="ghost-icon"
+            :data-tooltip="t('components.main.controls.mcp')"
+            @click="goToMcp"
+          >
             <span class="icon-svg" v-html="mcpIcon" aria-hidden="true"></span>
           </button>
-          <button class="ghost-icon" :aria-label="t('components.main.logs.view')" @click="goToLogs">
+          <button
+            class="ghost-icon"
+            :data-tooltip="t('components.main.controls.skill')"
+            @click="goToSkill"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M6 4h8a4 4 0 014 4v12a3 3 0 00-3-3H6z"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M6 4a2 2 0 00-2 2v13c0 .55.45 1 1 1h11"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M9 8h5"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              />
+            </svg>
+          </button>
+          <button
+            class="ghost-icon"
+            :data-tooltip="t('components.main.logs.view')"
+            @click="goToLogs"
+          >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path
                 d="M5 7h14M5 12h14M5 17h9"
@@ -173,7 +223,11 @@
               />
             </svg>
           </button>
-          <button class="ghost-icon" :aria-label="t('components.main.tabs.addCard')" @click="openCreateModal">
+          <button
+            class="ghost-icon"
+            :data-tooltip="t('components.main.tabs.addCard')"
+            @click="openCreateModal"
+          >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path
                 d="M12 5v14M5 12h14"
@@ -215,14 +269,20 @@
             <div class="card-text">
               <div class="card-title-row">
                 <p class="card-title">{{ card.name }}</p>
-                <button
+                <span v-if="card.level" class="level-badge" :class="`level-${card.level}`">
+                  L{{ card.level }}
+                </span>
+                <span
                   v-if="card.officialSite"
                   class="card-site"
-                  type="button"
+                  role="button"
+                  tabindex="0"
                   @click.stop="openOfficialSite(card.officialSite)"
+                  @keydown.enter.stop.prevent="openOfficialSite(card.officialSite)"
+                  @keydown.space.stop.prevent="openOfficialSite(card.officialSite)"
                 >
                   {{ formatOfficialSite(card.officialSite) }}
-                </button>
+                </span>
               </div>
               <!-- <p class="card-subtitle">{{ card.apiUrl }}</p> -->
               <p
@@ -365,6 +425,47 @@
                   </Listbox>
                 </div>
 
+                <div class="form-field">
+                  <span>{{ t('components.main.form.labels.level') }}</span>
+                  <Listbox v-model="modalState.form.level" v-slot="{ open }">
+                    <div class="level-select">
+                      <ListboxButton as="div" class="level-select-button">
+                        <span class="level-badge" :class="`level-${modalState.form.level || 1}`">
+                          L{{ modalState.form.level || 1 }}
+                        </span>
+                        <span class="level-label">
+                          Level {{ modalState.form.level || 1 }} - {{ getLevelDescription(modalState.form.level || 1) }}
+                        </span>
+                        <svg viewBox="0 0 20 20" aria-hidden="true">
+                          <path d="M6 8l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+                        </svg>
+                      </ListboxButton>
+                      <ListboxOptions v-if="open" class="level-select-options">
+                        <ListboxOption
+                          v-for="lvl in 10"
+                          :key="lvl"
+                          :value="lvl"
+                          v-slot="{ active, selected }"
+                        >
+                          <div :class="['level-option', { active, selected }]">
+                            <span class="level-badge" :class="`level-${lvl}`">L{{ lvl }}</span>
+                            <span class="level-name">Level {{ lvl }} - {{ getLevelDescription(lvl) }}</span>
+                          </div>
+                        </ListboxOption>
+                      </ListboxOptions>
+                    </div>
+                  </Listbox>
+                  <span class="field-hint">{{ t('components.main.form.hints.level') }}</span>
+                </div>
+
+                <div class="form-field">
+                  <ModelWhitelistEditor v-model="modalState.form.supportedModels" />
+                </div>
+
+                <div class="form-field">
+                  <ModelMappingEditor v-model="modalState.form.modelMapping" />
+                </div>
+
                 <div class="form-field switch-field">
                   <span>{{ t('components.main.form.labels.enabled') }}</span>
                   <div class="switch-inline">
@@ -408,27 +509,33 @@
         </BaseButton>
       </footer>
       </BaseModal>
+    <!-- 用户信息弹窗 -->
       <BaseModal
-      :open="userModalState.open"
-      :title="t('components.main.user.title')"
-      @close="closeUserModal"
-    >
-      <div class="user-info-body">
-        <div class="user-info-item">
-          <span class="user-info-label">{{ t('components.main.user.email') }}</span>
-          <span class="user-info-value">{{ userInfo?.email || '-' }}</span>
+        :open="userModalState.open"
+        :title="t('components.main.user.title')"
+        @close="closeUserModal"
+      >
+        <div class="user-info-body">
+          <div class="user-info-item">
+            <span class="user-info-label">{{ t('components.main.user.email') }}</span>
+            <span class="user-info-value">{{ userInfo?.email || '-' }}</span>
+          </div>
+          <div class="user-info-item">
+            <span class="user-info-label">{{ t('components.main.user.userId') }}</span>
+            <span class="user-info-value">{{ userInfo?.user_id || '-' }}</span>
+          </div>
         </div>
-        <div class="user-info-item">
-          <span class="user-info-label">{{ t('components.main.user.userId') }}</span>
-          <span class="user-info-value">{{ userInfo?.user_id || '-' }}</span>
-        </div>
-      </div>
-      <footer class="form-actions">
-        <BaseButton variant="danger" type="button" @click="handleLogout">
-          {{ t('components.main.user.logout') }}
-        </BaseButton>
-      </footer>
+        <footer class="form-actions">
+          <BaseButton variant="danger" type="button" @click="handleLogout">
+            {{ t('components.main.user.logout') }}
+          </BaseButton>
+        </footer>
       </BaseModal>
+
+      <!-- 版本信息 -->
+      <footer v-if="appVersion" class="main-version">
+        {{ t('components.main.versionLabel', { version: appVersion }) }}
+      </footer>
     </div>
   </div>
 </template>
@@ -452,6 +559,8 @@ import * as AuthService from '../../../bindings/codeswitch/services/authservice'
 import BaseButton from '../common/BaseButton.vue'
 import BaseModal from '../common/BaseModal.vue'
 import BaseInput from '../common/BaseInput.vue'
+import ModelWhitelistEditor from '../common/ModelWhitelistEditor.vue'
+import ModelMappingEditor from '../common/ModelMappingEditor.vue'
 import { LoadProviders, SaveProviders } from '../../../bindings/codeswitch/services/providerservice'
 import { fetchProxyStatus, enableProxy, disableProxy } from '../../services/claudeSettings'
 import { fetchHeatmapStats, fetchProviderDailyStats, type ProviderDailyStat } from '../../services/logs'
@@ -476,6 +585,7 @@ const releaseApiUrl = 'https://api.github.com/repos/daodao97/code-switch/release
 const HEATMAP_DAYS = DEFAULT_HEATMAP_DAYS
 const usageHeatmap = ref<UsageHeatmapWeek[]>(generateFallbackUsageHeatmap(HEATMAP_DAYS))
 const heatmapContainerRef = ref<HTMLElement | null>(null)
+const tooltipRef = ref<HTMLElement | null>(null)
 const proxyStates = reactive<Record<ProviderTab, boolean>>({
   claude: false,
   codex: false,
@@ -490,6 +600,10 @@ const providerStatsMap = reactive<Record<ProviderTab, Record<string, ProviderDai
   codex: {},
 } as Record<ProviderTab, Record<string, ProviderDailyStat>>)
 const providerStatsLoading = reactive<Record<ProviderTab, boolean>>({
+  claude: false,
+  codex: false,
+} as Record<ProviderTab, boolean>)
+const providerStatsLoaded = reactive<Record<ProviderTab, boolean>>({
   claude: false,
   codex: false,
 } as Record<ProviderTab, boolean>)
@@ -585,11 +699,40 @@ const clamp = (value: number, min: number, max: number) => {
   return Math.min(Math.max(value, min), max)
 }
 
+const TOOLTIP_DEFAULT_WIDTH = 220
+const TOOLTIP_DEFAULT_HEIGHT = 120
+const TOOLTIP_VERTICAL_OFFSET = 12
+const TOOLTIP_HORIZONTAL_MARGIN = 20
+const TOOLTIP_VERTICAL_MARGIN = 24
+
+const getTooltipSize = () => {
+  const rect = tooltipRef.value?.getBoundingClientRect()
+  return {
+    width: rect?.width ?? TOOLTIP_DEFAULT_WIDTH,
+    height: rect?.height ?? TOOLTIP_DEFAULT_HEIGHT,
+  }
+}
+
+const viewportSize = () => {
+  if (typeof window !== 'undefined') {
+    return { width: window.innerWidth, height: window.innerHeight }
+  }
+  if (typeof document !== 'undefined' && document.documentElement) {
+    return {
+      width: document.documentElement.clientWidth,
+      height: document.documentElement.clientHeight,
+    }
+  }
+  return {
+    width: heatmapContainerRef.value?.clientWidth ?? 0,
+    height: heatmapContainerRef.value?.clientHeight ?? 0,
+  }
+}
+
 const showUsageTooltip = (day: UsageHeatmapDay, event: MouseEvent) => {
   const target = event.currentTarget as HTMLElement | null
-  const containerRect = heatmapContainerRef.value?.getBoundingClientRect()
   const cellRect = target?.getBoundingClientRect()
-  if (!containerRect || !cellRect) return
+  if (!cellRect) return
   usageTooltip.label = day.label
   usageTooltip.dateKey = day.dateKey
   usageTooltip.requests = day.requests
@@ -597,15 +740,24 @@ const showUsageTooltip = (day: UsageHeatmapDay, event: MouseEvent) => {
   usageTooltip.outputTokens = day.outputTokens
   usageTooltip.reasoningTokens = day.reasoningTokens
   usageTooltip.cost = day.cost
-  const horizontalPadding = 20
-  const relativeLeft = cellRect.left - containerRect.left + cellRect.width / 2
-  usageTooltip.left = clamp(relativeLeft, horizontalPadding, containerRect.width - horizontalPadding)
-  const relativeTop = cellRect.top - containerRect.top
-  const shouldPlaceBelow = relativeTop < 60
+  const { width: tooltipWidth, height: tooltipHeight } = getTooltipSize()
+  const { width: viewportWidth, height: viewportHeight } = viewportSize()
+  const centerX = cellRect.left + cellRect.width / 2
+  const halfWidth = tooltipWidth / 2
+  const minLeft = TOOLTIP_HORIZONTAL_MARGIN + halfWidth
+  const maxLeft = viewportWidth > 0 ? viewportWidth - halfWidth - TOOLTIP_HORIZONTAL_MARGIN : centerX
+  usageTooltip.left = clamp(centerX, minLeft, maxLeft)
+
+  const anchorTop = cellRect.top
+  const anchorBottom = cellRect.bottom
+  const canShowAbove = anchorTop - tooltipHeight - TOOLTIP_VERTICAL_OFFSET >= TOOLTIP_VERTICAL_MARGIN
+  const viewportBottomLimit = viewportHeight > 0 ? viewportHeight - tooltipHeight - TOOLTIP_VERTICAL_MARGIN : anchorBottom
+  const shouldPlaceBelow = !canShowAbove
   usageTooltip.placement = shouldPlaceBelow ? 'below' : 'above'
-  const verticalPadding = 24
-  const baseTop = shouldPlaceBelow ? relativeTop + cellRect.height : relativeTop
-  usageTooltip.top = clamp(baseTop, verticalPadding, containerRect.height - verticalPadding)
+  const desiredTop = shouldPlaceBelow
+    ? anchorBottom + TOOLTIP_VERTICAL_OFFSET
+    : anchorTop - tooltipHeight - TOOLTIP_VERTICAL_OFFSET
+  usageTooltip.top = clamp(desiredTop, TOOLTIP_VERTICAL_MARGIN, viewportBottomLimit)
   usageTooltip.visible = true
 }
 
@@ -728,8 +880,8 @@ const loadProvidersFromDisk = async () => {
   for (const tab of providerTabIds) {
     try {
       const saved = await LoadProviders(tab)
-      if (saved && saved.length) {
-        replaceProviders(tab, saved)
+      if (Array.isArray(saved)) {
+        replaceProviders(tab, saved as AutomationCard[])
       } else {
         await persistProviders(tab)
       }
@@ -776,9 +928,18 @@ const loadProviderStats = async (tab: ProviderTab) => {
     ;(stats ?? []).forEach((stat) => {
       mapped[normalizeProviderKey(stat.provider)] = stat
     })
-    providerStatsMap[tab] = mapped
+    const hadExistingStats = Object.keys(providerStatsMap[tab] ?? {}).length > 0
+    if ((stats?.length ?? 0) > 0) {
+      providerStatsMap[tab] = mapped
+    } else if (!hadExistingStats) {
+      providerStatsMap[tab] = mapped
+    }
+    providerStatsLoaded[tab] = true
   } catch (error) {
     console.error(`Failed to load provider stats for ${tab}`, error)
+    if (!providerStatsLoaded[tab]) {
+      providerStatsLoaded[tab] = true
+    }
   } finally {
     providerStatsLoading[tab] = false
   }
@@ -819,7 +980,7 @@ const successRateClassName = (value: number) => {
 
 const providerStatDisplay = (providerName: string): ProviderStatDisplay => {
   const tab = activeTab.value
-  if (providerStatsLoading[tab]) {
+  if (!providerStatsLoaded[tab]) {
     return { state: 'loading', message: t('components.main.providers.loading') }
   }
   const stat = providerStatsMap[tab]?.[normalizeProviderKey(providerName)]
@@ -932,6 +1093,10 @@ const goToMcp = () => {
   router.push('/mcp')
 }
 
+const goToSkill = () => {
+  router.push('/skill')
+}
+
 const goToSettings = () => {
   router.push('/settings')
 }
@@ -1003,6 +1168,9 @@ type VendorForm = {
   officialSite: string
   icon: string
   enabled: boolean
+  supportedModels?: Record<string, boolean>
+  modelMapping?: Record<string, string>
+  level?: number
 }
 
 const iconOptions = Object.keys(lobeIcons).sort((a, b) => a.localeCompare(b))
@@ -1014,8 +1182,28 @@ const defaultFormValues = (): VendorForm => ({
   apiKey: '',
   officialSite: '',
   icon: defaultIconKey,
+  level: 1,
   enabled: true,
+  supportedModels: {},
+  modelMapping: {},
 })
+
+// Level 描述文本映射（1-10）
+const getLevelDescription = (level: number) => {
+  const descriptions: Record<number, string> = {
+    1: t('components.main.levelDesc.highest'),
+    2: t('components.main.levelDesc.high'),
+    3: t('components.main.levelDesc.mediumHigh'),
+    4: t('components.main.levelDesc.medium'),
+    5: t('components.main.levelDesc.normal'),
+    6: t('components.main.levelDesc.mediumLow'),
+    7: t('components.main.levelDesc.low'),
+    8: t('components.main.levelDesc.lower'),
+    9: t('components.main.levelDesc.veryLow'),
+    10: t('components.main.levelDesc.lowest'),
+  }
+  return descriptions[level] || t('components.main.levelDesc.normal')
+}
 
 const modalState = reactive({
   open: false,
@@ -1049,7 +1237,10 @@ const openEditModal = (card: AutomationCard) => {
     apiKey: card.apiKey,
     officialSite: card.officialSite,
     icon: card.icon,
+    level: card.level || 1,
     enabled: card.enabled,
+    supportedModels: card.supportedModels || {},
+    modelMapping: card.modelMapping || {},
   })
   modalState.errors.apiUrl = ''
   modalState.open = true
@@ -1087,7 +1278,10 @@ const submitModal = () => {
       apiKey,
       officialSite,
       icon,
+      level: modalState.form.level || 1,
       enabled: modalState.form.enabled,
+      supportedModels: modalState.form.supportedModels || {},
+      modelMapping: modalState.form.modelMapping || {},
     })
     void persistProviders(modalState.tabId)
   } else {
@@ -1100,7 +1294,10 @@ const submitModal = () => {
       icon,
       accent: '#0a84ff',
       tint: 'rgba(15, 23, 42, 0.12)',
+      level: modalState.form.level || 1,
       enabled: modalState.form.enabled,
+      supportedModels: modalState.form.supportedModels || {},
+      modelMapping: modalState.form.modelMapping || {},
     }
     list.push(newCard)
     void persistProviders(modalState.tabId)
@@ -1182,4 +1379,240 @@ const onTabChange = (idx: number) => {
     void loadProviderStats(nextTab as ProviderTab)
   }
 }
+
 </script>
+
+<style scoped>
+.main-version {
+  margin: 32px auto 12px;
+  text-align: center;
+  color: var(--mac-text-secondary);
+  font-size: 0.85rem;
+}
+
+/* Level Badge 样式 */
+.level-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  transition: all 0.2s ease;
+}
+
+/* Card title row badge 定位 */
+.card-title-row .level-badge {
+  margin-left: 8px;
+  margin-right: auto;
+}
+
+/* Level 配色方案：从绿色（高优先级）到红色（低优先级）*/
+.level-badge.level-1 {
+  background: rgba(16, 185, 129, 0.12);
+  color: rgb(5, 150, 105);
+}
+
+.level-badge.level-2 {
+  background: rgba(34, 197, 94, 0.12);
+  color: rgb(22, 163, 74);
+}
+
+.level-badge.level-3 {
+  background: rgba(132, 204, 22, 0.12);
+  color: rgb(101, 163, 13);
+}
+
+.level-badge.level-4 {
+  background: rgba(234, 179, 8, 0.12);
+  color: rgb(161, 98, 7);
+}
+
+.level-badge.level-5 {
+  background: rgba(245, 158, 11, 0.12);
+  color: rgb(180, 83, 9);
+}
+
+.level-badge.level-6 {
+  background: rgba(249, 115, 22, 0.12);
+  color: rgb(194, 65, 12);
+}
+
+.level-badge.level-7 {
+  background: rgba(239, 68, 68, 0.12);
+  color: rgb(185, 28, 28);
+}
+
+.level-badge.level-8 {
+  background: rgba(220, 38, 38, 0.12);
+  color: rgb(153, 27, 27);
+}
+
+.level-badge.level-9 {
+  background: rgba(190, 18, 60, 0.12);
+  color: rgb(136, 19, 55);
+}
+
+.level-badge.level-10 {
+  background: rgba(159, 18, 57, 0.12);
+  color: rgb(112, 26, 52);
+}
+
+/* 暗色模式适配 */
+:global(.dark) .level-badge.level-1 {
+  background: rgba(16, 185, 129, 0.18);
+  color: rgb(52, 211, 153);
+}
+
+:global(.dark) .level-badge.level-2 {
+  background: rgba(34, 197, 94, 0.18);
+  color: rgb(74, 222, 128);
+}
+
+:global(.dark) .level-badge.level-3 {
+  background: rgba(132, 204, 22, 0.18);
+  color: rgb(163, 230, 53);
+}
+
+:global(.dark) .level-badge.level-4 {
+  background: rgba(234, 179, 8, 0.18);
+  color: rgb(250, 204, 21);
+}
+
+:global(.dark) .level-badge.level-5 {
+  background: rgba(245, 158, 11, 0.18);
+  color: rgb(251, 191, 36);
+}
+
+:global(.dark) .level-badge.level-6 {
+  background: rgba(249, 115, 22, 0.18);
+  color: rgb(251, 146, 60);
+}
+
+:global(.dark) .level-badge.level-7 {
+  background: rgba(239, 68, 68, 0.18);
+  color: rgb(248, 113, 113);
+}
+
+:global(.dark) .level-badge.level-8 {
+  background: rgba(220, 38, 38, 0.18);
+  color: rgb(239, 68, 68);
+}
+
+:global(.dark) .level-badge.level-9 {
+  background: rgba(190, 18, 60, 0.18);
+  color: rgb(244, 63, 94);
+}
+
+:global(.dark) .level-badge.level-10 {
+  background: rgba(159, 18, 57, 0.18);
+  color: rgb(236, 72, 153);
+}
+
+/* Level Select Dropdown 样式 */
+.level-select {
+  position: relative;
+  border: 1px solid var(--mac-border);
+  border-radius: 12px;
+  padding: 10px;
+  background: color-mix(in srgb, var(--mac-surface) 90%, transparent);
+}
+
+:global(.dark) .level-select {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: color-mix(in srgb, var(--mac-surface) 70%, transparent);
+}
+
+.level-select-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  padding-left: 0;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.level-select-button:hover {
+  border-color: var(--color-border-hover);
+  background: var(--color-bg-tertiary);
+}
+
+.level-select-button:focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.level-select-button svg {
+  width: 16px;
+  height: 16px;
+  margin-left: auto;
+  opacity: 0.5;
+}
+
+.level-label {
+  flex: 1;
+  text-align: left;
+}
+
+.level-select-options {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 280px;
+  overflow-y: auto;
+  background: var(--mac-surface);
+  border: 1px solid var(--mac-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 50;
+  padding: 4px;
+}
+
+:global(.dark) .level-select-options {
+  background: var(--mac-surface);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.level-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.level-option:hover,
+.level-option.active {
+  background: var(--mac-surface-strong);
+}
+
+.level-option.selected {
+  background: color-mix(in srgb, var(--mac-accent) 12%, transparent);
+  font-weight: 500;
+}
+
+.level-option .level-name {
+  flex: 1;
+  font-size: 14px;
+  color: var(--mac-text);
+}
+
+.level-option.selected .level-name {
+  color: var(--mac-accent);
+}
+</style>
