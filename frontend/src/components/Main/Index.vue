@@ -40,6 +40,19 @@
           />
         </svg>
       </button>
+      <button class="login-button" @click="handleLoginClick">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        <span>{{ userInfo ? t('components.main.controls.profile') : t('components.main.controls.login') }}</span>
+      </button>
       <button class="ghost-icon" :aria-label="t('components.main.controls.settings')" @click="goToSettings">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path
@@ -395,6 +408,27 @@
         </BaseButton>
       </footer>
       </BaseModal>
+      <BaseModal
+      :open="userModalState.open"
+      :title="t('components.main.user.title')"
+      @close="closeUserModal"
+    >
+      <div class="user-info-body">
+        <div class="user-info-item">
+          <span class="user-info-label">{{ t('components.main.user.email') }}</span>
+          <span class="user-info-value">{{ userInfo?.email || '-' }}</span>
+        </div>
+        <div class="user-info-item">
+          <span class="user-info-label">{{ t('components.main.user.userId') }}</span>
+          <span class="user-info-value">{{ userInfo?.user_id || '-' }}</span>
+        </div>
+      </div>
+      <footer class="form-actions">
+        <BaseButton variant="danger" type="button" @click="handleLogout">
+          {{ t('components.main.user.logout') }}
+        </BaseButton>
+      </footer>
+      </BaseModal>
     </div>
   </div>
 </template>
@@ -414,6 +448,7 @@ import {
 } from '../../data/usageHeatmap'
 import { automationCardGroups, createAutomationCards, type AutomationCard } from '../../data/cards'
 import lobeIcons from '../../icons/lobeIconMap'
+import * as AuthService from '../../../bindings/codeswitch/services/authservice'
 import BaseButton from '../common/BaseButton.vue'
 import BaseModal from '../common/BaseModal.vue'
 import BaseInput from '../common/BaseInput.vue'
@@ -856,9 +891,20 @@ onMounted(async () => {
   await Promise.all(providerTabIds.map((tab) => loadProviderStats(tab)))
   await loadAppSettings()
   await checkForUpdates()
+  await loadUserInfo()
   startProviderStatsTimer()
   startUpdateTimer()
   window.addEventListener('app-settings-updated', handleAppSettingsUpdated)
+  // 监听登录成功事件
+  window.addEventListener('wails:event:auth:login-success', () => {
+    console.log('收到登录成功事件')
+    void loadUserInfo()
+  })
+  // 监听退出登录事件
+  window.addEventListener('wails:event:auth:logout', () => {
+    console.log('收到退出登录事件')
+    userInfo.value = null
+  })
 })
 
 onUnmounted(() => {
@@ -888,6 +934,54 @@ const goToMcp = () => {
 
 const goToSettings = () => {
   router.push('/settings')
+}
+
+const userInfo = ref<{ email: string; user_id: string } | null>(null)
+const userModalState = reactive({ open: false })
+
+const loadUserInfo = async () => {
+  try {
+    const info = await AuthService.GetAuthInfo()
+    if (info && info.token) {
+      userInfo.value = {
+        email: info.email,
+        user_id: info.user_id,
+      }
+    } else {
+      userInfo.value = null
+    }
+  } catch (error) {
+    console.error('加载用户信息失败:', error)
+    userInfo.value = null
+  }
+}
+
+const handleLoginClick = async () => {
+  if (userInfo.value) {
+    // 已登录，显示用户信息弹窗
+    userModalState.open = true
+  } else {
+    // 未登录，打开登录页面
+    try {
+      await AuthService.OpenLoginPage()
+    } catch (error) {
+      console.error('打开登录页面失败:', error)
+    }
+  }
+}
+
+const closeUserModal = () => {
+  userModalState.open = false
+}
+
+const handleLogout = async () => {
+  try {
+    await AuthService.Logout()
+    userInfo.value = null
+    closeUserModal()
+  } catch (error) {
+    console.error('退出登录失败:', error)
+  }
 }
 
 const toggleTheme = () => {

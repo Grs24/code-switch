@@ -1133,6 +1133,46 @@ html.dark .card-meta {
   display: block;
 }
 
+.login-button {
+  border: none;
+  background: var(--mac-accent);
+  color: #ffffff;
+  height: 34px;
+  padding: 0 16px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(10, 132, 255, 0.2);
+  white-space: nowrap;
+}
+
+.login-button:hover {
+  background: color-mix(in srgb, var(--mac-accent) 90%, black);
+  box-shadow: 0 4px 12px rgba(10, 132, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.login-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(10, 132, 255, 0.2);
+}
+
+.login-button svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+html.dark .login-button {
+  box-shadow: 0 2px 8px rgba(10, 132, 255, 0.4);
+}
+
 html.dark .ghost-icon {
   background: rgba(255, 255, 255, 0.1);
 }
@@ -1448,4 +1488,32 @@ html.dark .ghost-icon:hover {
 
 .general-page .mac-panel {
   width: 100%;
+}
+
+.user-info-body {
+  padding: 0 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.user-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.user-info-label {
+  font-size: 0.85rem;
+  color: var(--mac-text-secondary);
+  font-weight: 500;
+}
+
+.user-info-value {
+  font-size: 0.95rem;
+  color: var(--mac-text);
+  padding: 10px 14px;
+  background: var(--mac-surface-strong);
+  border-radius: 8px;
+  word-break: break-all;
 }

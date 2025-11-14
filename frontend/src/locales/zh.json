@@ -3,6 +3,20 @@
     "title": "我的应用",
     "login": "登录"
   },
+  "auth": {
+    "welcome": "欢迎使用 Code Switch",
+    "loginPrompt": "请登录以继续使用",
+    "loginButton": "立即登录",
+    "loading": "处理中...",
+    "hint": "点击后将在浏览器中打开登录页面",
+    "loggedIn": "已登录",
+    "email": "邮箱",
+    "userId": "用户ID",
+    "logout": "退出登录",
+    "loginError": "打开登录页面失败，请重试",
+    "logoutError": "退出登录失败，请重试",
+    "logoutConfirm": "确定要退出登录吗？"
+  },
   "menus": {
     "general": "通用设置",
     "shortcut": "快捷键",
@@ -50,8 +64,16 @@
         "github": "打开 GitHub",
         "githubUpdate": "打开 GitHub（发现新版本）",
         "theme": "切换主题",
+        "login": "登录",
+        "profile": "个人信息",
         "settings": "打开设置",
         "mcp": "打开 MCP 面板"
+      },
+      "user": {
+        "title": "个人信息",
+        "email": "邮箱",
+        "userId": "用户ID",
+        "logout": "退出登录"
       },
       "providers": {
         "requests": "请求数",

@@ -3,6 +3,20 @@
     "title": "My App",
     "login": "Login"
   },
+  "auth": {
+    "welcome": "Welcome to Code Switch",
+    "loginPrompt": "Please log in to continue",
+    "loginButton": "Login Now",
+    "loading": "Processing...",
+    "hint": "Login page will open in your browser",
+    "loggedIn": "Logged In",
+    "email": "Email",
+    "userId": "User ID",
+    "logout": "Logout",
+    "loginError": "Failed to open login page, please try again",
+    "logoutError": "Failed to logout, please try again",
+    "logoutConfirm": "Are you sure you want to logout?"
+  },
   "menus": {
     "about": "About",
     "general": "General settings",
@@ -49,8 +63,16 @@
         "github": "Open project GitHub",
         "githubUpdate": "Open GitHub (update available)",
         "theme": "Toggle theme",
+        "login": "Login",
+        "profile": "Profile",
         "settings": "Open settings",
         "mcp": "Open MCP panel"
+      },
+      "user": {
+        "title": "User Profile",
+        "email": "Email",
+        "userId": "User ID",
+        "logout": "Logout"
       },
       "providers": {
         "requests": "Requests",

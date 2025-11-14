@@ -23,5 +23,18 @@
             <string>true</string>
         <key>NSHumanReadableCopyright</key>
             <string>(c) 2025, Code Switch</string>
+        <key>CFBundleURLTypes</key>
+        <array>
+            <dict>
+                <key>CFBundleURLName</key>
+                <string>Code Switch URL</string>
+                <key>CFBundleURLSchemes</key>
+                <array>
+                    <string>codeswitch</string>
+                </array>
+                <key>CFBundleTypeRole</key>
+                <string>Editor</string>
+            </dict>
+        </array>
     </dict>
 </plist>

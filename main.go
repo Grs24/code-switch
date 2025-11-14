@@ -6,6 +6,7 @@ import (
 	_ "embed"
 	"fmt"
 	"log"
+	"os"
 	"runtime"
 	"time"
 
@@ -77,6 +78,10 @@ func main() {
 	dockService := dock.New()
 	versionService := NewVersionService()
 
+	// 创建认证相关服务
+	deepLinkService := services.NewDeepLinkService()
+	authService := services.NewAuthService(deepLinkService)
+
 	go func() {
 		if err := providerRelay.Start(); err != nil {
 			log.Printf("provider relay start error: %v", err)
@@ -103,6 +108,7 @@ func main() {
 			application.NewService(mcpService),
 			application.NewService(dockService),
 			application.NewService(versionService),
+			application.NewService(authService),
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),
@@ -184,6 +190,62 @@ func main() {
 	systray.SetMenu(trayMenu)
 
 	appservice.SetApp(app)
+	authService.SetApp(app)
+
+	// 设置登录成功回调
+	deepLinkService.SetAuthCallback(func(token, userID, email string) {
+		fmt.Printf("登录成功！UserID: %s, Email: %s\n", userID, email)
+
+		// 通知前端更新登录状态
+		fmt.Println("准备发送 auth:login-success 事件到前端...")
+		app.Event.Emit("auth:login-success", map[string]string{
+			"user_id": userID,
+			"email":   email,
+		})
+		fmt.Println("auth:login-success 事件已发送")
+
+		// 聚焦主窗口
+		if mainWindow != nil && !mainWindow.IsVisible() {
+			mainWindow.Show()
+			mainWindow.Focus()
+		}
+	})
+
+	// macOS/Windows/Linux: 处理 URL 事件（Deep Link）
+	app.Event.OnApplicationEvent(events.Common.ApplicationLaunchedWithUrl, func(event *application.ApplicationEvent) {
+		// 获取 URL
+		ctx := event.Context()
+		urlData := ctx.URL()
+		if urlData != "" {
+			log.Printf("收到 URL 事件: %s\n", urlData)
+			if err := deepLinkService.HandleDeepLink(urlData); err != nil {
+				log.Printf("处理 Deep Link 失败: %v\n", err)
+			}
+		}
+	})
+
+	// 检查启动参数（Windows / Linux / macOS 第二次启动）
+	if len(os.Args) > 1 {
+		deepLinkURL := os.Args[1]
+		log.Printf("启动参数 Deep Link: %s\n", deepLinkURL)
+
+		// 延迟处理，确保应用已完全启动
+		go func() {
+			time.Sleep(500 * time.Millisecond)
+			if err := deepLinkService.HandleDeepLink(deepLinkURL); err != nil {
+				log.Printf("处理 Deep Link 失败: %v\n", err)
+			}
+		}()
+	}
+
+	// 启动时检查是否已登录
+	go func() {
+		time.Sleep(1 * time.Second)
+		if authInfo, err := deepLinkService.LoadAuthInfo(); err == nil && authInfo != nil {
+			fmt.Printf("发现已保存的认证信息: UserID=%s, Email=%s\n",
+				authInfo.UserID, authInfo.Email)
+		}
+	}()
 
 	// Create a goroutine that emits an event containing the current time every second.
 	// The frontend can listen to this event and update the UI accordingly.
