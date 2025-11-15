@@ -3,6 +3,12 @@
     "title": "My App",
     "login": "Login"
   },
+  "auth": {
+    "login": "User Login",
+    "loading": "Logging in...",
+    "success": "Login successful",
+    "failed": "Login failed"
+  },
   "menus": {
     "about": "About",
     "general": "General settings",
@@ -78,10 +84,18 @@
         "github": "Open project GitHub",
         "githubUpdate": "Open GitHub (update available)",
         "theme": "Toggle theme",
+        "login": "Login",
+        "profile": "Profile",
         "settings": "Open settings",
         "mcp": "Open MCP panel",
         "skill": "Open skill catalog",
         "import": "Import cc-switch config"
+      },
+      "user": {
+        "title": "User Profile",
+        "email": "Email",
+        "userId": "User ID",
+        "logout": "Logout"
       },
       "versionLabel": "Version {version}",
       "importConfig": {

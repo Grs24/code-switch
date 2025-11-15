@@ -43,9 +43,9 @@ func (a *AppService) OpenSecondWindow() {
 		Title:     "Logs",
 		Name:      name,
 		Width:     1024,
-		Height:    800,
+		Height:    900,
 		MinWidth:  600,
-		MinHeight: 300,
+		MinHeight: 400,
 		Mac: application.MacWindow{
 			InvisibleTitleBarHeight: 50,
 			TitleBar:                application.MacTitleBarHidden,
@@ -67,6 +67,7 @@ func main() {
 	if errt != nil {
 		// 处理错误，比如日志或退出
 	}
+	authService := services.NewAuthService()
 	providerService := services.NewProviderService()
 	providerRelay := services.NewProviderRelayService(providerService, ":18100")
 	claudeSettings := services.NewClaudeSettingsService(providerRelay.Addr())
@@ -97,6 +98,7 @@ func main() {
 		Description: "Claude Code and Codex provier manager",
 		Services: []application.Service{
 			application.NewService(appservice),
+			application.NewService(authService),
 			application.NewService(suiService),
 			application.NewService(providerService),
 			application.NewService(claudeSettings),
@@ -129,9 +131,9 @@ func main() {
 	mainWindow := app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Title:     "Code Switch",
 		Width:     1024,
-		Height:    800,
+		Height:    900,
 		MinWidth:  600,
-		MinHeight: 300,
+		MinHeight: 400,
 		Mac: application.MacWindow{
 			InvisibleTitleBarHeight: 50,
 			Backdrop:                application.MacBackdropTranslucent,

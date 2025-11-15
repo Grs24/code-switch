@@ -3,6 +3,12 @@
     "title": "我的应用",
     "login": "登录"
   },
+  "auth": {
+    "login": "用户登录",
+    "loading": "登录中...",
+    "success": "登录成功",
+    "failed": "登录失败"
+  },
   "menus": {
     "general": "通用设置",
     "shortcut": "快捷键",
@@ -79,10 +85,18 @@
         "github": "打开 GitHub",
         "githubUpdate": "打开 GitHub（发现新版本）",
         "theme": "切换主题",
+        "login": "登录",
+        "profile": "用户信息",
         "settings": "打开设置",
         "mcp": "打开 MCP 面板",
         "skill": "打开 Skill 列表",
         "import": "导入 cc-switch 配置"
+      },
+      "user": {
+        "title": "用户信息",
+        "email": "邮箱",
+        "userId": "用户ID",
+        "logout": "退出登录"
       },
       "versionLabel": "版本 {version}",
       "importConfig": {
