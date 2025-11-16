@@ -25,6 +25,8 @@ type Config struct {
 	LoginURL string
 	// API 基础 URL
 	APIURL string
+	// AICoding API Base URL (用于 Claude Code 和 Codex)
+	AICodeBaseURL string
 }
 
 var (
@@ -48,22 +50,27 @@ func init() {
 	case EnvironmentDevelopment:
 		Current.LoginURL = "http://localhost:3000/desktop-login"
 		Current.APIURL = "https://wildai-qa.bihu.it" // 本地开发使用 QA 后端
+		Current.AICodeBaseURL = "https://aicoding.2233.ai"
 	case EnvironmentQA:
 		Current.LoginURL = "https://0011ai-qa.bihu.it/desktop-login"
 		Current.APIURL = "https://wildai-qa.bihu.it"
+		Current.AICodeBaseURL = "https://aicoding.2233.ai"
 	case EnvironmentProduction:
 		Current.LoginURL = "https://0011.ai/desktop-login"
 		Current.APIURL = "https://api.wildai.net"
+		Current.AICodeBaseURL = "https://aicoding.2233.ai"
 	default:
 		// 默认开发环境
 		Current.LoginURL = "http://localhost:3000/desktop-login"
 		Current.APIURL = "https://wildai-qa.bihu.it" // 本地开发使用 QA 后端
+		Current.AICodeBaseURL = "https://aicoding.2233.ai"
 	}
 
 	// 打印配置信息（方便调试）
 	fmt.Printf("[Config] Environment: %s\n", Current.Environment)
 	fmt.Printf("[Config] LoginURL: %s\n", Current.LoginURL)
 	fmt.Printf("[Config] APIURL: %s\n", Current.APIURL)
+	fmt.Printf("[Config] AICodeBaseURL: %s\n", Current.AICodeBaseURL)
 }
 
 // GetLoginURL 获取登录页 URL
@@ -89,4 +96,9 @@ func IsQA() bool {
 // IsProduction 是否生产环境
 func IsProduction() bool {
 	return Current.Environment == EnvironmentProduction
+}
+
+// GetAICodeBaseURL 获取 AICoding Base URL
+func GetAICodeBaseURL() string {
+	return Current.AICodeBaseURL
 }

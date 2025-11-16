@@ -65,8 +65,6 @@
           />
         </svg>
       </button>
-
-      <!-- 设置按钮 -->
       <button
         class="ghost-icon"
         :data-tooltip="t('components.main.controls.settings')"
@@ -518,61 +516,13 @@
       </BaseModal>
 
       <!-- 用户信息弹窗 -->
-      <BaseModal :open="showUserModal" title="用户信息" @close="showUserModal = false">
-        <div class="user-info-modal">
-          <div class="user-info-section">
-            <label class="user-info-label">邮箱</label>
-            <div class="user-info-value">{{ userInfo?.email || '-' }}</div>
-          </div>
-
-          <div class="user-info-section">
-            <div class="api-key-header">
-              <label class="user-info-label">API Key</label>
-              <BaseButton 
-                v-if="!apiKeyLoading"
-                variant="outline" 
-                @click="updateApiKey"
-                style="padding: 4px 12px; font-size: 12px;"
-              >
-                {{ apiKeyData ? '更新密钥' : '创建密钥' }}
-              </BaseButton>
-            </div>
-            
-            <div v-if="apiKeyLoading" class="api-key-loading">
-              加载中...
-            </div>
-            
-            <div v-else-if="!apiKeyData" class="api-key-empty">
-              还没有 API 密钥，点击上方按钮创建
-            </div>
-            
-            <div v-else class="api-key-display">
-              <code class="api-key-code">{{ displayApiKey }}</code>
-              <button class="icon-btn" @click="toggleApiKeyVisibility">
-                <svg v-if="showApiKey" viewBox="0 0 24 24" width="16" height="16">
-                  <path d="M13.73 4.5A6.5 6.5 0 0 0 5.5 12c0 .88.18 1.71.5 2.47M9.88 9.88a3 3 0 1 0 4.24 4.24M9.88 9.88L5.5 5.5m4.38 4.38l4.24 4.24m0 0L18.5 18.5M3 3l18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
-                </svg>
-                <svg v-else viewBox="0 0 24 24" width="16" height="16">
-                  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
-                  <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" fill="none"/>
-                </svg>
-              </button>
-              <button class="icon-btn" @click="copyApiKey">
-                <svg viewBox="0 0 24 24" width="16" height="16">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" stroke="currentColor" stroke-width="2" fill="none"/>
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="2" fill="none"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          <div class="user-info-actions">
-            <BaseButton variant="danger" @click="handleLogout" :disabled="logoutLoading">
-              {{ logoutLoading ? '退出中...' : '退出登录' }}
-            </BaseButton>
-          </div>
-        </div>
-      </BaseModal>
+      <UserLoginModal
+        :open="showUserModal"
+        :user-info="userInfo"
+        :logout-loading="logoutLoading"
+        @close="closeUserModal"
+        @logout="handleLogoutFromModal"
+      />
 
       <footer v-if="appVersion" class="main-version">
         {{ t('components.main.versionLabel', { version: appVersion }) }}
@@ -586,7 +536,6 @@ import { computed, reactive, ref, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from '@headlessui/vue'
 import { Browser, Events } from '@wailsio/runtime'
-import { request } from '../../utils/request'
 import {
 	buildUsageHeatmapMatrix,
 	generateFallbackUsageHeatmap,
@@ -602,26 +551,20 @@ import BaseModal from '../common/BaseModal.vue'
 import BaseInput from '../common/BaseInput.vue'
 import ModelWhitelistEditor from '../common/ModelWhitelistEditor.vue'
 import ModelMappingEditor from '../common/ModelMappingEditor.vue'
+import UserLoginModal from '../UserLogin/UserLoginModal.vue'
 import { LoadProviders, SaveProviders } from '../../../bindings/codeswitch/services/providerservice'
 import { GetUserInfo, IsLogin } from '../../services/auth'
+import { request } from '../../utils/request'
 import { fetchProxyStatus, enableProxy, disableProxy } from '../../services/claudeSettings'
 import { fetchHeatmapStats, fetchProviderDailyStats, type ProviderDailyStat } from '../../services/logs'
 import { fetchCurrentVersion } from '../../services/version'
 import { fetchAppSettings, type AppSettings } from '../../services/appSettings'
 import { getCurrentTheme, setTheme, type ThemeMode } from '../../utils/ThemeManager'
 import { useRouter } from 'vue-router'
+import { runAutoConfigInBackground, hasAutoConfigured, markAutoConfigDone, clearAutoConfigMark } from '../../services/autoConfigService'
 
 const { t, locale } = useI18n()
 const router = useRouter()
-
-type AuthUser = {
-  user_id?: string
-  email?: string
-  token?: string
-}
-
-const userInfo = ref<AuthUser | null>(null)
-const authBusy = ref(false)
 const themeMode = ref<ThemeMode>(getCurrentTheme())
 const resolvedTheme = computed(() => {
   if (themeMode.value === 'systemdefault') {
@@ -665,6 +608,17 @@ const showHomeTitle = ref(true)
 const mcpIcon = lobeIcons['mcp'] ?? ''
 const appVersion = ref('')
 const hasUpdateAvailable = ref(false)
+
+// 用户登录相关状态
+interface AuthUser {
+  email?: string
+  [key: string]: any
+}
+const userInfo = ref<AuthUser | null>(null)
+const authBusy = ref(false)
+const showUserModal = ref(false)
+const logoutLoading = ref(false)
+const isFirstLogin = ref(false) // 标记是否是首次登录
 
 const intensityClass = (value: number) => `gh-level-${value}`
 
@@ -1096,28 +1050,6 @@ const stopProviderStatsTimer = () => {
   }
 }
 
-const loadAuthInfo = async () => {
-  try {
-    const isLoggedIn = await IsLogin()
-    if (isLoggedIn) {
-      const info = await GetUserInfo()
-      userInfo.value = info ?? null
-    } else {
-      userInfo.value = null
-    }
-  } catch (error) {
-    console.error('failed to load auth info', error)
-    userInfo.value = null
-  }
-}
-
-const showUserModal = ref(false)
-const showApiKey = ref(false)
-const apiKeyData = ref<{ id: number; token: string; status: number } | null>(null)
-const apiKeyLoading = ref(false)
-const logoutLoading = ref(false)
-const apiKey = computed(() => apiKeyData.value?.token || '')
-
 // 渐变色方案
 const gradientColors = [
   'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -1131,18 +1063,15 @@ const gradientColors = [
   'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
   'linear-gradient(135deg, #ff6e7f 0%, #bfe9ff 100%)',
 ]
-
 // 获取用户邮箱首字母
 const userInitial = computed(() => {
   const email = userInfo.value?.email || ''
   return email.charAt(0).toUpperCase() || 'U'
 })
-
 // 根据邮箱生成一致的渐变色
 const userAvatarGradient = computed(() => {
   const email = userInfo.value?.email || ''
   if (!email) return gradientColors[0]
-  
   // 使用邮箱字符串生成一个稳定的索引
   let hash = 0
   for (let i = 0; i < email.length; i++) {
@@ -1152,27 +1081,15 @@ const userAvatarGradient = computed(() => {
   return gradientColors[index]
 })
 
-const displayApiKey = computed(() => {
-  if (!apiKey.value) return '-'
-  if (showApiKey.value) return apiKey.value
-  // 脱敏显示，只显示前8和后5位
-  if (apiKey.value.length > 13) {
-    return `${apiKey.value.slice(0, 8)}...${apiKey.value.slice(-5)}`
-  }
-  return apiKey.value
-})
-
-const toggleApiKeyVisibility = () => {
-  showApiKey.value = !showApiKey.value
-}
-
-const copyApiKey = async () => {
-  if (!apiKey.value) return
+// 用户登录相关函数
+const loadAuthInfo = async () => {
   try {
-    await navigator.clipboard.writeText(apiKey.value)
-    console.log('API Key 已复制')
+    const isLoggedIn = await IsLogin()
+    if (isLoggedIn) {
+      userInfo.value = await GetUserInfo()
+    }
   } catch (error) {
-    console.error('复制失败:', error)
+    console.error('[Auth] 加载用户信息失败:', error)
   }
 }
 
@@ -1182,66 +1099,15 @@ const handleLoginClick = async () => {
   // 如果已登录，显示用户信息弹窗
   if (userInfo.value) {
     showUserModal.value = true
-    // 加载 API Key
-    await loadApiKey()
     return
   }
   
-  // 未登录，打开登录页面
-  authBusy.value = true
-  try {
-    router.push('/login')
-  } catch (error) {
-    console.error('failed to open login page', error)
-  } finally {
-    authBusy.value = false
-  }
+  // 未登录，跳转到登录页
+  router.push('/login')
 }
 
-// 获取 API Key
-const loadApiKey = async () => {
-  if (!userInfo.value) return
-  
-  apiKeyLoading.value = true
-  try {
-    const result = await request.get<{ list: any[] }>('/aicoding0011/xapi/user/token')
-    
-    if (result?.list && result.list.length > 0) {
-      apiKeyData.value = result.list[0]
-    }
-  } catch (error) {
-    console.error('获取 API Key 失败:', error)
-  } finally {
-    apiKeyLoading.value = false
-  }
-}
-
-// 创建或更新 API Key
-const updateApiKey = async () => {
-  if (!userInfo.value) return
-  
-  apiKeyLoading.value = true
-  try {
-    if (apiKeyData.value) {
-      // 更新现有 API Key
-      const result = await request.put('/aicoding0011/xapi/user/token', {
-        id: apiKeyData.value.id,
-        token: apiKeyData.value.token,
-        status: apiKeyData.value.status,
-      })
-      apiKeyData.value = result
-      console.log('API Key 已更新')
-    } else {
-      // 创建新 API Key
-      const result = await request.post('/aicoding0011/xapi/user/token', { status: 1 })
-      apiKeyData.value = result
-      console.log('API Key 已创建')
-    }
-  } catch (error) {
-    console.error('更新 API Key 失败:', error)
-  } finally {
-    apiKeyLoading.value = false
-  }
+const closeUserModal = () => {
+  showUserModal.value = false
 }
 
 const handleLogout = async () => {
@@ -1256,17 +1122,29 @@ const handleLogout = async () => {
     
     const logoutFrame = document.createElement('iframe')
     logoutFrame.style.display = 'none'
+    
+    // 添加错误处理，避免 iframe 加载失败时的错误提示
+    logoutFrame.onerror = () => {
+      console.warn('[Logout] Web 端登出请求失败，但不影响桌面端退出')
+    }
+    
     logoutFrame.src = logoutURL
     document.body.appendChild(logoutFrame)
     
     // 等待 Web 端清除完成（给足够时间让事件处理和 localStorage 清除）
     await new Promise(resolve => setTimeout(resolve, 1500))
-    document.body.removeChild(logoutFrame)
+    
+    try {
+      document.body.removeChild(logoutFrame)
+    } catch (e) {
+      // 忽略移除 iframe 时的错误
+    }
     
     // 清除桌面端状态
     await Logout()
+    clearAutoConfigMark(userInfo.value)
+    
     userInfo.value = null
-    apiKeyData.value = null
     showUserModal.value = false
     Events.Emit('auth:logout')
   } catch (error) {
@@ -1276,24 +1154,47 @@ const handleLogout = async () => {
   }
 }
 
+const handleLogoutFromModal = async () => {
+  await handleLogout()
+}
+
 let removeLoginListener: (() => void) | undefined
 let removeLogoutListener: (() => void) | undefined
 
 const setupAuthEventHandlers = () => {
   removeLoginListener?.()
   removeLogoutListener?.()
-  removeLoginListener = Events.On('auth:login-success', (event) => {
+  removeLoginListener = Events.On('auth:login-success', async (event) => {
     const payload = (event?.data ?? null) as AuthUser | null
     userInfo.value = payload ?? null
+    isFirstLogin.value = true
+    
+    if (payload) {
+      const success = await runAutoConfigInBackground(payload)
+      if (success) {
+        markAutoConfigDone(payload)
+      }
+    }
   })
   removeLogoutListener = Events.On('auth:logout', () => {
     userInfo.value = null
+    showUserModal.value = false
+    isFirstLogin.value = false
   })
 }
 
 onMounted(async () => {
   setupAuthEventHandlers()
   await loadAuthInfo()
+  
+  // 如果用户已登录且未配置，触发首次自动配置
+  if (userInfo.value && !hasAutoConfigured(userInfo.value)) {
+    const success = await runAutoConfigInBackground(userInfo.value)
+    if (success) {
+      markAutoConfigDone(userInfo.value)
+    }
+  }
+  
   void loadUsageHeatmap()
   await loadProvidersFromDisk()
   await Promise.all(providerTabIds.map(refreshProxyState))
@@ -1579,101 +1480,6 @@ const onTabChange = (idx: number) => {
   text-align: center;
   color: var(--mac-text-secondary);
   font-size: 0.85rem;
-}
-
-/* 用户信息弹窗样式 */
-.user-info-modal {
-  padding: 8px 0;
-}
-
-.user-info-section {
-  margin-bottom: 20px;
-}
-
-.user-info-section:last-child {
-  margin-bottom: 0;
-}
-
-.user-info-label {
-  display: block;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--mac-text-secondary);
-  margin-bottom: 8px;
-}
-
-.user-info-value {
-  font-size: 0.95rem;
-  color: var(--mac-text-primary);
-  padding: 10px 12px;
-  background: var(--mac-bg-secondary);
-  border-radius: 6px;
-}
-
-.api-key-display {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
-  background: var(--mac-bg-secondary);
-  border-radius: 6px;
-}
-
-.api-key-code {
-  flex: 1;
-  font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
-  font-size: 0.85rem;
-  color: var(--mac-text-primary);
-  word-break: break-all;
-}
-
-.icon-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  background: transparent;
-  border: none;
-  border-radius: 6px;
-  color: var(--mac-text-secondary);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.icon-btn:hover {
-  background: var(--mac-bg-hover);
-  color: var(--mac-text-primary);
-}
-
-.icon-btn:active {
-  transform: scale(0.95);
-}
-
-.api-key-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.api-key-loading,
-.api-key-empty {
-  padding: 10px 12px;
-  background: var(--mac-bg-secondary);
-  border-radius: 6px;
-  color: var(--mac-text-secondary);
-  font-size: 0.875rem;
-  text-align: center;
-}
-
-.user-info-actions {
-  margin-top: 24px;
-  padding-top: 20px;
-  border-top: 1px solid var(--mac-border);
-  display: flex;
-  justify-content: flex-end;
 }
 
 /* 用户头像样式 */
