@@ -22,6 +22,11 @@ tasks:
     cmds:
       - task: "{{OS}}:package"
 
+  package:qa:
+    summary: Packages a QA build of the application
+    cmds:
+      - task: "{{OS}}:package:qa"
+
   run:
     summary: Runs the application
     cmds:

@@ -5,6 +5,9 @@ import (
 	"os"
 )
 
+// 编译时注入的环境变量
+var BuildEnvironment string
+
 // Environment 环境类型
 type Environment string
 
@@ -36,7 +39,12 @@ var (
 
 // 初始化配置
 func init() {
-	env := os.Getenv("ENVIRONMENT")
+	// 优先使用编译时注入的环境变量
+	env := BuildEnvironment
+	if env == "" {
+		// 其次使用运行时环境变量
+		env = os.Getenv("ENVIRONMENT")
+	}
 	if env == "" {
 		env = "development" // 默认开发环境（方便本地调试）
 	}

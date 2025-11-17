@@ -18,7 +18,8 @@ tasks:
     cmds:
       - go build {{.BUILD_FLAGS}} -o {{.OUTPUT}}
     vars:
-      BUILD_FLAGS: '{{if eq .PRODUCTION "true"}}-tags production -trimpath -buildvcs=false -ldflags="-w -s"{{else}}-buildvcs=false -gcflags=all="-l"{{end}}'
+      ENV_FLAG: '{{if eq .PRODUCTION "true"}}production{{else if eq .PRODUCTION "qa"}}qa{{else}}development{{end}}'
+      BUILD_FLAGS: '{{if eq .PRODUCTION "true"}}-tags production -trimpath -buildvcs=false -ldflags="-w -s -X codeswitch/config.BuildEnvironment={{.ENV_FLAG}}"{{else}}-buildvcs=false -gcflags=all="-l" -ldflags="-X codeswitch/config.BuildEnvironment={{.ENV_FLAG}}"{{end}}'
       DEFAULT_OUTPUT: '{{.BIN_DIR}}/{{.APP_NAME}}'
       OUTPUT: '{{ .OUTPUT | default .DEFAULT_OUTPUT }}'
     env:
@@ -54,6 +55,15 @@ tasks:
     cmds:
       - task: create:app:bundle
 
+  package:qa:
+    summary: Packages a QA build of the application into a `.app` bundle
+    deps:
+      - task: build
+        vars:
+          PRODUCTION: "qa"
+    cmds:
+      - task: create:app:bundle:qa
+
   package:universal:
     summary: Packages darwin universal binary (arm64 + amd64)
     deps:
@@ -70,6 +80,15 @@ tasks:
       - cp {{.BIN_DIR}}/{{.APP_NAME}} {{.BIN_DIR}}/{{.APP_NAME}}.app/Contents/MacOS
       - cp build/darwin/Info.plist {{.BIN_DIR}}/{{.APP_NAME}}.app/Contents
       - codesign --force --deep --sign - {{.BIN_DIR}}/{{.APP_NAME}}.app
+
+  create:app:bundle:qa:
+    summary: Creates a QA `.app` bundle
+    cmds:
+      - mkdir -p {{.BIN_DIR}}/{{.APP_NAME}}-QA.app/Contents/{MacOS,Resources}
+      - cp build/darwin/icons.icns {{.BIN_DIR}}/{{.APP_NAME}}-QA.app/Contents/Resources
+      - cp {{.BIN_DIR}}/{{.APP_NAME}} {{.BIN_DIR}}/{{.APP_NAME}}-QA.app/Contents/MacOS/{{.APP_NAME}}
+      - cp build/darwin/Info.plist {{.BIN_DIR}}/{{.APP_NAME}}-QA.app/Contents
+      - codesign --force --deep --sign - {{.BIN_DIR}}/{{.APP_NAME}}-QA.app
 
   run:
     cmds:
