@@ -332,6 +332,15 @@ html.dark .mac-sidebar-item:hover {
   line-height: 1.6;
 }
 
+.subscription-card {
+  max-width: 480px;
+  margin: 24px auto 0;
+  padding: 20px;
+  background: var(--mac-bg-secondary);
+  border-radius: 12px;
+  border: 1px solid var(--mac-border);
+}
+
 .eyebrow {
   text-transform: uppercase;
   letter-spacing: 0.2em;
@@ -1183,6 +1192,51 @@ html.dark .ghost-icon:hover {
   transform: translateX(-50%) translateY(2px);
 }
 
+/* 套餐状态按钮 */
+.subscription-btn {
+  width: auto !important;
+  padding: 0 14px;
+  min-width: 60px;
+  background: rgba(99, 102, 241, 0.1) !important;
+  color: rgba(99, 102, 241, 0.9);
+  font-weight: 500;
+}
+
+html.dark .subscription-btn {
+  background: rgba(99, 102, 241, 0.15) !important;
+  color: rgba(129, 140, 248, 0.95);
+}
+
+.subscription-btn:hover {
+  background: rgba(99, 102, 241, 0.15) !important;
+}
+
+html.dark .subscription-btn:hover {
+  background: rgba(99, 102, 241, 0.25) !important;
+}
+
+.subscription-btn.subscription-expired {
+  background: rgba(239, 68, 68, 0.1) !important;
+  color: rgb(239, 68, 68);
+}
+
+html.dark .subscription-btn.subscription-expired {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: rgb(248, 113, 113);
+}
+
+.subscription-btn.subscription-expired:hover {
+  background: rgba(239, 68, 68, 0.15) !important;
+}
+
+html.dark .subscription-btn.subscription-expired:hover {
+  background: rgba(239, 68, 68, 0.25) !important;
+}
+
+.subscription-text {
+  font-size: 13px;
+  line-height: 1;
+}
 
 .modal-backdrop {
   position: fixed;

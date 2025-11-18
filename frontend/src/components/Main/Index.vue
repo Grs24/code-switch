@@ -44,27 +44,13 @@
           />
         </svg>
       </button>
-    <!-- 登录/用户信息按钮 -->
-      <button 
-        :class="['ghost-icon', { 'user-avatar-btn': userInfo }]"
-        :data-tooltip="userInfo ? t('components.main.controls.profile') : t('components.main.controls.login')"
-        @click="handleLoginClick"
-      >
-        <div v-if="userInfo" class="user-avatar" :style="{ background: userAvatarGradient }">
-          <span class="user-initial">{{ userInitial }}</span>
-        </div>
-        <svg v-else viewBox="0 0 24 24" aria-hidden="true">
-          <!-- 用户图标 -->
-          <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.5" fill="none" />
-          <path
-            d="M4 20c0-4 3.5-6 8-6s8 2 8 6"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.5"
-            stroke-linecap="round"
-          />
-        </svg>
-      </button>
+
+      <!-- 套餐状态按钮 -->
+      <SubscriptionButton :user-info="userInfo" />
+      
+      <!-- 登录/用户信息按钮 -->
+      <UserButton :user-info="userInfo" @logout="handleLogout" />
+      
       <button
         class="ghost-icon"
         :data-tooltip="t('components.main.controls.settings')"
@@ -288,8 +274,8 @@
               </div>
               <!-- <p class="card-subtitle">{{ card.apiUrl }}</p> -->
               <p
-                v-for="(stats, statsIndex) in [providerStatDisplay(card.name)]"
-                :key="`metrics-${card.id}-${statsIndex}`"
+                v-for="stats in [providerStatDisplay(card.name)]"
+                :key="`metrics-${card.id}`"
                 class="card-metrics"
               >
                 <template v-if="stats.state !== 'ready'">
@@ -479,14 +465,6 @@
       </footer>
       </BaseModal>
 
-      <!-- 用户信息弹窗 -->
-      <UserLoginModal
-        :open="showUserModal"
-        :user-info="userInfo"
-        :logout-loading="logoutLoading"
-        @close="closeUserModal"
-        @logout="handleLogoutFromModal"
-      />
 
       <footer v-if="appVersion" class="main-version">
         {{ t('components.main.versionLabel', { version: appVersion }) }}
@@ -515,7 +493,8 @@ import BaseModal from '../common/BaseModal.vue'
 import BaseInput from '../common/BaseInput.vue'
 import ModelWhitelistEditor from '../common/ModelWhitelistEditor.vue'
 import ModelMappingEditor from '../common/ModelMappingEditor.vue'
-import UserLoginModal from '../UserLogin/UserLoginModal.vue'
+import SubscriptionButton from '../Subscription/SubscriptionButton.vue'
+import UserButton from '../Auth/UserButton.vue'
 import { LoadProviders, SaveProviders } from '../../../bindings/codeswitch/services/providerservice'
 import { GetUserInfo, IsLogin } from '../../services/auth'
 import { request } from '../../utils/request'
@@ -580,8 +559,6 @@ interface AuthUser {
 }
 const userInfo = ref<AuthUser | null>(null)
 const authBusy = ref(false)
-const showUserModal = ref(false)
-const logoutLoading = ref(false)
 const isFirstLogin = ref(false) // 标记是否是首次登录
 
 const intensityClass = (value: number) => `gh-level-${value}`
@@ -1014,37 +991,6 @@ const stopProviderStatsTimer = () => {
   }
 }
 
-// 渐变色方案
-const gradientColors = [
-  'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-  'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-  'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-  'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-  'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-  'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
-  'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-  'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
-  'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
-  'linear-gradient(135deg, #ff6e7f 0%, #bfe9ff 100%)',
-]
-// 获取用户邮箱首字母
-const userInitial = computed(() => {
-  const email = userInfo.value?.email || ''
-  return email.charAt(0).toUpperCase() || 'U'
-})
-// 根据邮箱生成一致的渐变色
-const userAvatarGradient = computed(() => {
-  const email = userInfo.value?.email || ''
-  if (!email) return gradientColors[0]
-  // 使用邮箱字符串生成一个稳定的索引
-  let hash = 0
-  for (let i = 0; i < email.length; i++) {
-    hash = email.charCodeAt(i) + ((hash << 5) - hash)
-  }
-  const index = Math.abs(hash) % gradientColors.length
-  return gradientColors[index]
-})
-
 // 用户登录相关函数
 const loadAuthInfo = async () => {
   try {
@@ -1057,25 +1003,8 @@ const loadAuthInfo = async () => {
   }
 }
 
-const handleLoginClick = async () => {
-  if (authBusy.value) return
-  
-  // 如果已登录，显示用户信息弹窗
-  if (userInfo.value) {
-    showUserModal.value = true
-    return
-  }
-  
-  // 未登录，跳转到登录页
-  router.push('/login')
-}
-
-const closeUserModal = () => {
-  showUserModal.value = false
-}
-
 const handleLogout = async () => {
-  logoutLoading.value = true
+  authBusy.value = true
   try {
     const { Logout, GetLoginURL } = await import('../../services/auth')
     
@@ -1109,17 +1038,12 @@ const handleLogout = async () => {
     clearAutoConfigMark(userInfo.value)
     
     userInfo.value = null
-    showUserModal.value = false
     Events.Emit('auth:logout')
   } catch (error) {
     console.error('退出登录失败:', error)
   } finally {
-    logoutLoading.value = false
+    authBusy.value = false
   }
-}
-
-const handleLogoutFromModal = async () => {
-  await handleLogout()
 }
 
 let removeLoginListener: (() => void) | undefined
@@ -1142,7 +1066,6 @@ const setupAuthEventHandlers = () => {
   })
   removeLogoutListener = Events.On('auth:logout', () => {
     userInfo.value = null
-    showUserModal.value = false
     isFirstLogin.value = false
   })
 }

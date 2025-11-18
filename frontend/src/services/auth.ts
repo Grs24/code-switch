@@ -58,3 +58,17 @@ export async function GetToken(): Promise<string> {
 export async function GetAPIURL(): Promise<string> {
   return Call.ByName(`${SERVICE_NAME}.GetAPIURL`)
 }
+
+/**
+ * 获取 AICoding Base URL
+ */
+export async function GetAICodeBaseURL(): Promise<string> {
+  return Call.ByName(`${SERVICE_NAME}.GetAICodeBaseURL`)
+}
+
+/**
+ * 获取订阅页面 URL
+ */
+export async function GetSubscriptionURL(): Promise<string> {
+  return Call.ByName(`${SERVICE_NAME}.GetSubscriptionURL`)
+}

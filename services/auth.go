@@ -40,6 +40,23 @@ func (s *AuthService) GetAPIURL() string {
 	return config.GetAPIURL()
 }
 
+// GetAICodeBaseURL 获取 AICoding Base URL
+func (s *AuthService) GetAICodeBaseURL() string {
+	return config.GetAICodeBaseURL()
+}
+
+// GetSubscriptionURL 获取订阅页面 URL
+func (s *AuthService) GetSubscriptionURL() string {
+	// 根据 LoginURL 推导订阅页面 URL
+	loginURL := config.GetLoginURL()
+	// 移除 /desktop-login 后缀，添加 /subscribe
+	baseURL := loginURL
+	if len(baseURL) > 14 && baseURL[len(baseURL)-14:] == "/desktop-login" {
+		baseURL = baseURL[:len(baseURL)-14]
+	}
+	return baseURL + "/subscribe"
+}
+
 // SetUserInfo 设置用户信息（从前端调用）
 func (s *AuthService) SetUserInfo(userInfoJSON string) error {
 	s.mu.Lock()

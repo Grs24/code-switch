@@ -408,6 +408,17 @@
         "invalid": "Invalid combination, include a modifier"
       },
       "placeholder": "Press keys to record"
+    },
+    "subscription": {
+      "loading": "Loading subscription info...",
+      "loadError": "Failed to load subscription info",
+      "pleaseLogin": "Please login to view subscription",
+      "subscribe": "Subscribe",
+      "renew": "Renew",
+      "expiredTip": "Expired, please renew",
+      "expireInfo": "Expires in {days} days, on {date}",
+      "expiredOn": "Expired on {date}",
+      "buyTip": "Go to 0011.ai to purchase subscription"
     }
   }
 }

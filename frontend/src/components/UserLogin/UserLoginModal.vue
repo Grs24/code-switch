@@ -1,21 +1,30 @@
 <template>
   <BaseModal :open="open" title="用户信息" @close="handleClose">
     <div class="user-info-modal">
-      <!-- 用户基本信息 -->
-      <div class="user-info-section">
-        <label class="user-info-label">邮箱</label>
-        <div class="user-info-value">{{ userInfo?.email || '-' }}</div>
+      <div class="user-info-row">
+        <div class="user-info-section user-info-email">
+          <label class="user-info-label">邮箱</label>
+          <div class="user-info-value">{{ userInfo?.email || '-' }}</div>
+        </div>
+        
+        <div class="user-info-section user-info-subscription">
+          <label class="user-info-label">套餐</label>
+          <SubscriptionStatus 
+            ref="subscriptionRef"
+            :user-info="userInfo"
+            compact
+          />
+        </div>
       </div>
 
-      <!-- API Key 信息 -->
       <div class="user-info-section">
         <div class="api-key-header">
           <label class="user-info-label">API Key</label>
           <BaseButton 
             v-if="!apiKeyLoading"
-            variant="outline" 
+            variant="primary" 
             @click="updateApiKey"
-            style="padding: 4px 12px; font-size: 12px;"
+            class="create-api-key-btn"
           >
             {{ apiKeyData ? '更新密钥' : '创建密钥' }}
           </BaseButton>
@@ -49,7 +58,6 @@
         </div>
       </div>
 
-      <!-- 自动配置区域 -->
       <AutoConfigSection
         v-if="apiKeyData"
         ref="autoConfigRef"
@@ -57,7 +65,6 @@
         :user-info="userInfo"
       />
 
-      <!-- 退出登录 -->
       <div class="user-info-actions">
         <BaseButton variant="danger" @click="handleLogout" :disabled="logoutLoading">
           <span v-if="logoutLoading" class="loading-spinner"></span>
@@ -73,6 +80,7 @@ import { ref, computed, watch } from 'vue'
 import BaseModal from '../common/BaseModal.vue'
 import BaseButton from '../common/BaseButton.vue'
 import AutoConfigSection from './AutoConfigSection.vue'
+import SubscriptionStatus from '../Subscription/SubscriptionStatus.vue'
 import { fetchUserApiKey } from '../../services/autoConfigService'
 import { request } from '../../utils/request'
 
@@ -87,33 +95,29 @@ const props = withDefaults(defineProps<Props>(), {
 })
 const emit = defineEmits(['close', 'logout'])
 
-// 获取 AutoConfigSection 的引用
 const autoConfigRef = ref<InstanceType<typeof AutoConfigSection> | null>(null)
+const subscriptionRef = ref<InstanceType<typeof SubscriptionStatus> | null>(null)
 
-// 状态
 const showApiKey = ref(false)
 const apiKeyData = ref<{ id: number; token: string; status: number } | null>(null)
 const apiKeyLoading = ref(false)
 
-// 计算属性
 const apiKey = computed(() => apiKeyData.value?.token || '')
 
 const displayApiKey = computed(() => {
   if (!apiKey.value) return '-'
   if (showApiKey.value) return apiKey.value
-  // 脱敏显示
   if (apiKey.value.length < 13) return apiKey.value
   return `${apiKey.value.slice(0, 8)}****${apiKey.value.slice(-4)}`
 })
 
-// 监听弹窗打开
 watch(() => props.open, async (isOpen) => {
   if (isOpen && props.userInfo) {
     await loadApiKey()
+    subscriptionRef.value?.refresh()
   }
 })
 
-// 加载 API Key（复用 autoConfigService 中的函数）
 const loadApiKey = async () => {
   if (!props.userInfo) return
   
@@ -130,7 +134,6 @@ const loadApiKey = async () => {
   }
 }
 
-// 更新 API Key
 const updateApiKey = async () => {
   if (!props.userInfo) return
   
@@ -154,12 +157,10 @@ const updateApiKey = async () => {
   }
 }
 
-// 切换 API Key 可见性
 const toggleApiKeyVisibility = () => {
   showApiKey.value = !showApiKey.value
 }
 
-// 复制 API Key
 const copyApiKey = async () => {
   if (!apiKey.value) return
   try {
@@ -169,19 +170,15 @@ const copyApiKey = async () => {
   }
 }
 
-// 退出登录
 const handleLogout = () => {
-  // 触发父组件的退出登录处理
   emit('logout')
 }
 
-// 关闭弹窗
 const handleClose = () => {
   showApiKey.value = false
   emit('close')
 }
 
-// 暴露给父组件的方法：触发自动配置
 const triggerAutoConfig = async () => {
   await loadApiKey()
   
@@ -190,7 +187,6 @@ const triggerAutoConfig = async () => {
   }
 }
 
-// 暴露方法给父组件
 defineExpose({
   triggerAutoConfig
 })
@@ -204,6 +200,21 @@ defineExpose({
   gap: 20px;
 }
 
+.user-info-row {
+  display: flex;
+  gap: 16px;
+}
+
+.user-info-email {
+  flex: 0 0 40%;
+  min-width: 0;
+}
+
+.user-info-subscription {
+  flex: 1;
+  min-width: 0;
+}
+
 .user-info-section {
   display: flex;
   flex-direction: column;
@@ -215,6 +226,10 @@ defineExpose({
   font-weight: 500;
   color: var(--mac-text-secondary);
   margin-bottom: 4px;
+}
+
+.create-api-key-btn{
+  font-size: 12px;
 }
 
 .user-info-value {

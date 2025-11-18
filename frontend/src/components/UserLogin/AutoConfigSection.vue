@@ -550,7 +550,7 @@ defineExpose({
   height: 56px !important;
   font-size: 18px !important;
   font-weight: 500 !important;
-  border-radius: 8px !important;
+  border-radius: 40px !important;
   transition: all 0.2s ease !important;
 }
 
