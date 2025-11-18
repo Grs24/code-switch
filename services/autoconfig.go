@@ -496,7 +496,7 @@ func (s *AutoConfigService) configureCodex(apiKey string, baseURL string) error 
 			"aicoding": map[string]interface{}{
 				"name":                 "aicoding",
 				"base_url":             baseURL,
-				"env_key":              "OPENAI_API_KEY",
+				"api_key":              apiKey,
 				"wire_api":             "responses",
 				"requires_openai_auth": false,
 			},
