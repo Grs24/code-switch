@@ -1,7 +1,10 @@
 <template>
   <div class="main-shell">
     <div class="global-actions">
-      <p class="global-eyebrow">{{ t('components.main.hero.eyebrow') }}</p>
+      <div class="global-eyebrow-with-logo">
+        <img src="/logo.svg" alt="0011 Logo" class="brand-logo" />
+        <p class="global-eyebrow">{{ t('components.main.hero.eyebrow') }}</p>
+      </div>
       <button
         class="ghost-icon github-icon"
         :class="{ 'github-upgrade': hasUpdateAvailable }"
