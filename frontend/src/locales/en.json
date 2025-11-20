@@ -418,7 +418,33 @@
       "expiredTip": "Expired, please renew",
       "expireInfo": "Expires in {days} days, on {date}",
       "expiredOn": "Expired on {date}",
-      "buyTip": "Go to 0011.ai to purchase subscription"
+      "buyTip": "Go to 0011.ai to purchase subscription",
+      "viewQuota": "View quota details"
+    },
+    "quota": {
+      "title": "Quota Details",
+      "loading": "Loading...",
+      "retry": "Retry",
+      "refresh": "Refresh",
+      "close": "Close",
+      "noData": "No quota information available",
+      "fetchError": "Failed to fetch quota information",
+      "overview": {
+        "title": "0011 Subscription Balance",
+        "totalAmount": "Total Amount",
+        "dailyQuota": "Daily Quota",
+        "usedToday": "Used Today",
+        "remaining": "Remaining",
+        "renew": "Renew",
+        "viewDetails": "View Details",
+        "daysRemaining": "Expires in {days} days",
+        "expiringToday": "Expires today",
+        "expiringTomorrow": "Expires tomorrow",
+        "expired": "Expired",
+        "low": "Low quota",
+        "criticalLow": "Critical low",
+        "expiringSoon": "Expiring soon"
+      }
     }
   }
 }

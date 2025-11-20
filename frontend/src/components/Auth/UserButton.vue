@@ -24,9 +24,8 @@
   <UserLoginModal
     :open="showUserModal"
     :user-info="userInfo"
-    :logout-loading="logoutLoading"
     @close="closeUserModal"
-    @logout="handleLogoutFromModal"
+    @logout-success="handleLogoutSuccess"
   />
   </div>
 </template>
@@ -45,10 +44,9 @@ interface Props {
 }
 
 const props = defineProps<Props>()
-const emit = defineEmits(['logout'])
+const emit = defineEmits(['logout-success'])
 
 const showUserModal = ref(false)
-const logoutLoading = ref(false)
 
 // 用户头像渐变色
 const gradientColors = [
@@ -96,14 +94,9 @@ const closeUserModal = () => {
   showUserModal.value = false
 }
 
-const handleLogoutFromModal = async () => {
-  logoutLoading.value = true
-  try {
-    emit('logout')
-  } finally {
-    logoutLoading.value = false
-    showUserModal.value = false
-  }
+const handleLogoutSuccess = () => {
+  showUserModal.value = false
+  emit('logout-success')
 }
 </script>
 

@@ -142,7 +142,7 @@ import {
   type AutoConfigResult,
   type DependencyCheckResult
 } from '../../services/autoConfig'
-import { API_BASE_URL } from '../../config/provider0011'
+import { API_BASE_URL, getAPIBaseURL } from '../../config/provider0011'
 
 interface Props {
   apiKeyData: { id: number; token: string; status: number }
@@ -179,7 +179,9 @@ const apiKey = computed(() => customApiKey.value || props.apiKeyData?.token || '
 
 const defaultDomain = computed(() => {
   try {
-    const url = new URL(API_BASE_URL)
+    // 优先使用 customBaseUrl，否则使用 API_BASE_URL
+    const baseUrl = customBaseUrl.value || API_BASE_URL
+    const url = new URL(baseUrl)
     return url.hostname
   } catch {
     return 'aicoding.2233.ai'
@@ -203,9 +205,10 @@ watch(() => props.apiKeyData, (newData) => {
 // 加载默认 Base URL
 const loadDefaultBaseURL = async () => {
   try {
-    const defaultURL = await GetDefaultBaseURL()
-    if (defaultURL && !customBaseUrl.value) {
-      customBaseUrl.value = defaultURL
+    if (!customBaseUrl.value) {
+      // 从后端获取真实的 API 地址用于显示
+      const backendURL = await getAPIBaseURL()
+      customBaseUrl.value = backendURL
     }
   } catch {
     if (!customBaseUrl.value) {
@@ -325,7 +328,9 @@ const handleAutoConfig = async () => {
     updateStepStatus('configure-codex', 'running')
     await new Promise(resolve => setTimeout(resolve, 300))
     
-    const result = await ConfigureAll(apiKey.value, customBaseUrl.value)
+    // 获取本地代理地址用于实际配置
+    const proxyURL = await GetDefaultBaseURL().catch(() => '')
+    const result = await ConfigureAll(apiKey.value, proxyURL)
     
     if (result.claudeStatus.includes('成功')) {
       updateStepStatus('configure-claude', 'success', undefined, result.configPaths.claude || [])
@@ -402,8 +407,9 @@ const toggleEditBaseUrl = async () => {
 // 重置 Base URL
 const resetBaseUrl = async () => {
   try {
-    const defaultURL = await GetDefaultBaseURL()
-    customBaseUrl.value = defaultURL || API_BASE_URL
+    // 重置为真实的 API 地址
+    const backendURL = await getAPIBaseURL()
+    customBaseUrl.value = backendURL
   } catch {
     customBaseUrl.value = API_BASE_URL
   }

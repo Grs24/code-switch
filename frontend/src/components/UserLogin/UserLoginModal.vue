@@ -83,17 +83,17 @@ import AutoConfigSection from './AutoConfigSection.vue'
 import SubscriptionStatus from '../Subscription/SubscriptionStatus.vue'
 import { fetchUserApiKey } from '../../services/autoConfigService'
 import { request } from '../../utils/request'
+import { useLogout } from '../../composables/useLogout'
 
 interface Props {
   open: boolean
   userInfo: any
-  logoutLoading?: boolean
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  logoutLoading: false
-})
-const emit = defineEmits(['close', 'logout'])
+const props = defineProps<Props>()
+const emit = defineEmits(['close', 'logout-success'])
+
+const { logout, logoutLoading } = useLogout()
 
 const autoConfigRef = ref<InstanceType<typeof AutoConfigSection> | null>(null)
 const subscriptionRef = ref<InstanceType<typeof SubscriptionStatus> | null>(null)
@@ -178,8 +178,12 @@ const copyApiKey = async () => {
   }
 }
 
-const handleLogout = () => {
-  emit('logout')
+const handleLogout = async () => {
+  const success = await logout(props.userInfo)
+  if (success) {
+    emit('logout-success')
+    handleClose()
+  }
 }
 
 const handleClose = () => {

@@ -419,7 +419,33 @@
       "expiredTip": "已到期请付费",
       "expireInfo": "{days}天后，{date}到期",
       "expiredOn": "已过期 {date}",
-      "buyTip": "前往 0011.ai 购买套餐使用"
+      "buyTip": "前往 0011.ai 购买套餐使用",
+      "viewQuota": "查看额度详情"
+    },
+    "quota": {
+      "title": "额度详情",
+      "loading": "加载中...",
+      "retry": "重试",
+      "refresh": "刷新",
+      "close": "关闭",
+      "noData": "暂无额度信息",
+      "fetchError": "获取额度信息失败",
+      "overview": {
+        "title": "0011 套餐余额",
+        "totalAmount": "总金额",
+        "dailyQuota": "每日额度",
+        "usedToday": "今日已用",
+        "remaining": "剩余",
+        "renew": "续费",
+        "viewDetails": "查看详情",
+        "daysRemaining": "{days} 天后到期",
+        "expiringToday": "今天到期",
+        "expiringTomorrow": "明天到期",
+        "expired": "已过期",
+        "low": "额度偏低",
+        "criticalLow": "额度不足",
+        "expiringSoon": "即将到期"
+      }
     }
   }
 }

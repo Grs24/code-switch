@@ -250,6 +250,7 @@ defineExpose({
   flex-direction: row;
   align-items: center;
   gap: 12px;
+  min-height: 46px;
 }
 
 .subscription-status.compact {

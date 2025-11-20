@@ -45,11 +45,8 @@
         </svg>
       </button>
 
-      <!-- 套餐状态按钮 -->
-      <SubscriptionButton :user-info="userInfo" />
-      
       <!-- 登录/用户信息按钮 -->
-      <UserButton :user-info="userInfo" @logout="handleLogout" />
+      <UserButton :user-info="userInfo" @logout-success="handleLogout" />
       
       <button
         class="ghost-icon"
@@ -83,6 +80,9 @@
           {{ t('components.main.hero.lead') }}
         </p> -->
       </section>
+
+      <!-- 0011 余额概览卡片 -->
+      <QuotaOverviewCard :user-info="userInfo" />
 
       <section
         v-if="showHeatmap"
@@ -465,7 +465,6 @@
       </footer>
       </BaseModal>
 
-
       <footer v-if="appVersion" class="main-version">
         {{ t('components.main.versionLabel', { version: appVersion }) }}
       </footer>
@@ -495,6 +494,7 @@ import ModelWhitelistEditor from '../common/ModelWhitelistEditor.vue'
 import ModelMappingEditor from '../common/ModelMappingEditor.vue'
 import SubscriptionButton from '../Subscription/SubscriptionButton.vue'
 import UserButton from '../Auth/UserButton.vue'
+import QuotaOverviewCard from '../Quota/QuotaOverviewCard.vue'
 import { LoadProviders, SaveProviders } from '../../../bindings/codeswitch/services/providerservice'
 import { GetUserInfo, IsLogin } from '../../services/auth'
 import { request } from '../../utils/request'
@@ -504,12 +504,14 @@ import { fetchCurrentVersion } from '../../services/version'
 import { fetchAppSettings, type AppSettings } from '../../services/appSettings'
 import { getCurrentTheme, setTheme, type ThemeMode } from '../../utils/ThemeManager'
 import { useRouter } from 'vue-router'
-import { runAutoConfigInBackground, hasAutoConfigured, markAutoConfigDone, clearAutoConfigMark, type ApiKeyData } from '../../services/autoConfigService'
+import { runAutoConfigInBackground, hasAutoConfigured, markAutoConfigDone, type ApiKeyData } from '../../services/autoConfigService'
 import { create0011Provider, get0011ProviderId, is0011Provider } from '../../config/provider0011'
+import { useLogout } from '../../composables/useLogout'
 
 const { t, locale } = useI18n()
 const router = useRouter()
 const themeMode = ref<ThemeMode>(getCurrentTheme())
+const { logout } = useLogout()
 const resolvedTheme = computed(() => {
   if (themeMode.value === 'systemdefault') {
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
@@ -1029,45 +1031,9 @@ const loadAuthInfo = async () => {
 }
 
 const handleLogout = async () => {
-  authBusy.value = true
-  try {
-    const { Logout, GetLoginURL } = await import('../../services/auth')
-    
-    // 通知 Web 端清除登录状态
-    const loginURL = await GetLoginURL()
-    const url = new URL(loginURL)
-    const logoutURL = `${url.protocol}//${url.host}/logout`
-    
-    const logoutFrame = document.createElement('iframe')
-    logoutFrame.style.display = 'none'
-    
-    // 添加错误处理，避免 iframe 加载失败时的错误提示
-    logoutFrame.onerror = () => {
-      console.warn('[Logout] Web 端登出请求失败，但不影响桌面端退出')
-    }
-    
-    logoutFrame.src = logoutURL
-    document.body.appendChild(logoutFrame)
-    
-    // 等待 Web 端清除完成（给足够时间让事件处理和 localStorage 清除）
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    
-    try {
-      document.body.removeChild(logoutFrame)
-    } catch (e) {
-      // 忽略移除 iframe 时的错误
-    }
-    
-    // 清除桌面端状态
-    await Logout()
-    clearAutoConfigMark(userInfo.value)
-    
+  const success = await logout(userInfo.value)
+  if (success) {
     userInfo.value = null
-    Events.Emit('auth:logout')
-  } catch (error) {
-    console.error('退出登录失败:', error)
-  } finally {
-    authBusy.value = false
   }
 }
 
