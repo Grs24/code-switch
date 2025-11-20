@@ -76,7 +76,8 @@ func (s *AutoConfigService) ConfigureAll(apiKey string, baseURL string) (*AutoCo
 	if baseURL != "" {
 		apiBaseURL = baseURL
 	} else {
-		apiBaseURL = appConfig.GetAICodeBaseURL()
+		// 默认走本地代理（provider relay）
+		apiBaseURL = s.getBaseURL()
 	}
 	result := &AutoConfigResult{
 		Success:              true,
@@ -144,7 +145,8 @@ func (s *AutoConfigService) ConfigureClaudeCodeOnly(apiKey string, baseURL strin
 	if baseURL != "" {
 		apiBaseURL = baseURL
 	} else {
-		apiBaseURL = appConfig.GetAICodeBaseURL()
+		// 默认走本地代理（provider relay）
+		apiBaseURL = s.getBaseURL()
 	}
 	result := &AutoConfigResult{
 		Success:              true,
@@ -198,7 +200,8 @@ func (s *AutoConfigService) ConfigureCodexOnly(apiKey string, baseURL string) (*
 	if baseURL != "" {
 		apiBaseURL = baseURL
 	} else {
-		apiBaseURL = appConfig.GetAICodeBaseURL()
+		// 默认走本地代理（provider relay）
+		apiBaseURL = s.getBaseURL()
 	}
 	result := &AutoConfigResult{
 		Success:              true,
@@ -347,7 +350,8 @@ func (s *AutoConfigService) VerifyConfiguration() (*AutoConfigResult, error) {
 func (s *AutoConfigService) configureClaudeCode(apiKey string, baseURL string) error {
 	// 如果没有提供 baseURL，使用默认值
 	if baseURL == "" {
-		baseURL = appConfig.GetAICodeBaseURL()
+		// 默认走本地代理（provider relay）
+		baseURL = s.getBaseURL()
 	}
 
 	home, err := os.UserHomeDir()
@@ -462,7 +466,8 @@ func (s *AutoConfigService) configureShellEnv(apiKey string, baseURL string) err
 func (s *AutoConfigService) configureCodex(apiKey string, baseURL string) error {
 	// 如果没有提供 baseURL，使用默认值
 	if baseURL == "" {
-		baseURL = appConfig.GetAICodeBaseURL()
+		// 默认走本地代理（provider relay）
+		baseURL = s.getBaseURL()
 	}
 
 	home, err := os.UserHomeDir()
@@ -491,12 +496,14 @@ func (s *AutoConfigService) configureCodex(apiKey string, baseURL string) error 
 		"disable_response_storage": true,
 		"preferred_auth_method":    "apikey",
 		"model":                    "gpt-5-codex",
-		"model_provider":           "aicoding",
+		// 与 CodexSettingsService 对齐，使用本地代理的 provider key
+		"model_provider":           "code-switch",
 		"model_providers": map[string]interface{}{
-			"aicoding": map[string]interface{}{
-				"name":                 "aicoding",
+			"code-switch": map[string]interface{}{
+				"name":                 "code-switch",
 				"base_url":             baseURL,
-				"api_key":              apiKey,
+				// 通过 auth.json 注入 OPENAI_API_KEY，不内嵌 api_key 字段
+				"env_key":              "OPENAI_API_KEY",
 				"wire_api":             "responses",
 				"requires_openai_auth": false,
 			},
@@ -804,5 +811,6 @@ func removeModelProvidersHeader(data []byte) []byte {
 
 // GetDefaultBaseURL 获取默认的 Base URL
 func (s *AutoConfigService) GetDefaultBaseURL() string {
-	return appConfig.GetAICodeBaseURL()
+	// 默认返回本地 provider relay 的地址，供前端静默自动配置使用
+	return s.getBaseURL()
 }

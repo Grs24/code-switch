@@ -112,6 +112,11 @@ const handleMessage = async (event: MessageEvent) => {
     try {
       // 将用户信息发送到 Go 后端
       await SetUserInfo(JSON.stringify(event.data.userInfo))
+      // 登录成功后，静默执行自动配置
+      const { runAutoConfigInBackground } = await import('../../services/autoConfigService')
+      runAutoConfigInBackground(event.data.userInfo).catch((error) => {
+        // console.warn('[Login] 后台自动配置失败:', error)
+      })
 
       // 触发登录成功事件，通知主界面更新
       const { Events } = await import('@wailsio/runtime')
@@ -122,7 +127,6 @@ const handleMessage = async (event: MessageEvent) => {
         router.push('/')
       }, 500)
     } catch (error) {
-      console.error('[Login] 保存用户信息失败:', error)
       loading.value = false
     }
   }

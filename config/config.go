@@ -56,8 +56,13 @@ func init() {
 	// 根据环境设置 URL
 	switch Current.Environment {
 	case EnvironmentDevelopment:
-		Current.LoginURL = "http://localhost:3000/desktop-login"
-		Current.APIURL = "https://wildai-qa.bihu.it" // 本地开发使用 QA 后端
+		// 本地开发使用
+		// Current.LoginURL = "https://0011ai-qa.bihu.it/desktop-login"
+		// Current.APIURL = "https://wildai-qa.bihu.it" // 本地开发使用 QA 后端
+
+		// 本地默认使用生产环境接口，方便测试数据
+		Current.LoginURL = "https://0011.ai/desktop-login"
+		Current.APIURL = "https://api.wildai.net"
 		Current.AICodeBaseURL = "https://aicoding.2233.ai"
 	case EnvironmentQA:
 		Current.LoginURL = "https://0011ai-qa.bihu.it/desktop-login"
@@ -68,9 +73,9 @@ func init() {
 		Current.APIURL = "https://api.wildai.net"
 		Current.AICodeBaseURL = "https://aicoding.2233.ai"
 	default:
-		// 默认开发环境
-		Current.LoginURL = "http://localhost:3000/desktop-login"
-		Current.APIURL = "https://wildai-qa.bihu.it" // 本地开发使用 QA 后端
+		// 默认生产
+		Current.LoginURL = "https://0011.ai/desktop-login"
+		Current.APIURL = "https://api.wildai.net"
 		Current.AICodeBaseURL = "https://aicoding.2233.ai"
 	}
 

@@ -61,10 +61,10 @@
           type="text"
           class="url-input"
           :class="{ 'editing': isEditingBaseUrl }"
-          :placeholder="DEFAULT_BASE_URL"
+          :placeholder="API_BASE_URL"
         />
         <button 
-          v-if="isEditingBaseUrl && customBaseUrl !== DEFAULT_BASE_URL"
+          v-if="isEditingBaseUrl && customBaseUrl !== API_BASE_URL"
           class="reset-btn"
           @click="resetBaseUrl"
           title="重置为默认值"
@@ -117,7 +117,7 @@
       :result="autoConfigResult"
       :api-key="customApiKey"
       :custom-base-url="customBaseUrl"
-      :default-base-url="DEFAULT_BASE_URL"
+      :default-base-url="API_BASE_URL"
       :verification-info="verificationInfo"
       :show-detailed-info="showDetailedInfo"
       @show-details="showDetailedInfo = !showDetailedInfo"
@@ -142,6 +142,7 @@ import {
   type AutoConfigResult,
   type DependencyCheckResult
 } from '../../services/autoConfig'
+import { API_BASE_URL } from '../../config/provider0011'
 
 interface Props {
   apiKeyData: { id: number; token: string; status: number }
@@ -149,9 +150,6 @@ interface Props {
 }
 
 const props = defineProps<Props>()
-
-// 默认 Base URL
-const DEFAULT_BASE_URL = 'https://aicoding.2233.ai'
 
 // 状态
 const customApiKey = ref('')
@@ -181,7 +179,7 @@ const apiKey = computed(() => customApiKey.value || props.apiKeyData?.token || '
 
 const defaultDomain = computed(() => {
   try {
-    const url = new URL(DEFAULT_BASE_URL)
+    const url = new URL(API_BASE_URL)
     return url.hostname
   } catch {
     return 'aicoding.2233.ai'
@@ -211,7 +209,7 @@ const loadDefaultBaseURL = async () => {
     }
   } catch {
     if (!customBaseUrl.value) {
-      customBaseUrl.value = DEFAULT_BASE_URL
+      customBaseUrl.value = API_BASE_URL
     }
   }
 }
@@ -405,9 +403,9 @@ const toggleEditBaseUrl = async () => {
 const resetBaseUrl = async () => {
   try {
     const defaultURL = await GetDefaultBaseURL()
-    customBaseUrl.value = defaultURL || DEFAULT_BASE_URL
+    customBaseUrl.value = defaultURL || API_BASE_URL
   } catch {
-    customBaseUrl.value = DEFAULT_BASE_URL
+    customBaseUrl.value = API_BASE_URL
   }
 }
 
@@ -422,7 +420,7 @@ const copyCommand = async (command: string) => {
 
 // 打开教程
 const openTutorial = () => {
-  const baseUrl = customBaseUrl.value || DEFAULT_BASE_URL
+  const baseUrl = customBaseUrl.value || API_BASE_URL
   const tutorialUrl = `${baseUrl}/claude-code/tutorial`
   window.open(tutorialUrl, '_blank')
 }

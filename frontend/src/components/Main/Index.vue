@@ -317,7 +317,7 @@
                 <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
             </button>
-            <button class="ghost-icon" @click="requestRemove(card)">
+            <button v-if="!is0011Provider(card.id)" class="ghost-icon" @click="requestRemove(card)">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path
                   d="M9 3h6m-7 4h8m-6 0v11m4-11v11M5 7h14l-.867 12.138A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.862L5 7z"
@@ -504,7 +504,8 @@ import { fetchCurrentVersion } from '../../services/version'
 import { fetchAppSettings, type AppSettings } from '../../services/appSettings'
 import { getCurrentTheme, setTheme, type ThemeMode } from '../../utils/ThemeManager'
 import { useRouter } from 'vue-router'
-import { runAutoConfigInBackground, hasAutoConfigured, markAutoConfigDone, clearAutoConfigMark } from '../../services/autoConfigService'
+import { runAutoConfigInBackground, hasAutoConfigured, markAutoConfigDone, clearAutoConfigMark, type ApiKeyData } from '../../services/autoConfigService'
+import { create0011Provider, get0011ProviderId, is0011Provider } from '../../config/provider0011'
 
 const { t, locale } = useI18n()
 const router = useRouter()
@@ -822,6 +823,27 @@ const replaceProviders = (tabId: ProviderTab, data: AutomationCard[]) => {
   cards[tabId].splice(0, cards[tabId].length, ...createAutomationCards(data))
 }
 
+const ensure0011Provider = (tab: ProviderTab) => {
+  const expectedId = get0011ProviderId(tab)
+  const list = cards[tab]
+  
+  // 检查是否已存在 0011 供应商
+  const has0011 = list.some(card => card.id === expectedId)
+  
+  if (!has0011) {
+    // 使用统一配置创建 0011 供应商
+    const default0011 = create0011Provider(tab)
+    
+    // 添加到列表开头
+    list.unshift(default0011)
+    
+    // 保存到磁盘
+    void persistProviders(tab)
+    
+    console.log(`[Main] 已自动创建 ${tab} 0011 供应商 (ID=${expectedId})`)
+  }
+}
+
 const loadProvidersFromDisk = async () => {
   for (const tab of providerTabIds) {
     try {
@@ -831,6 +853,9 @@ const loadProvidersFromDisk = async () => {
       } else {
         await persistProviders(tab)
       }
+      
+      // 确保 0011 供应商存在
+      ensure0011Provider(tab)
     } catch (error) {
       console.error('Failed to load providers', error)
     }
@@ -1049,41 +1074,73 @@ const handleLogout = async () => {
 let removeLoginListener: (() => void) | undefined
 let removeLogoutListener: (() => void) | undefined
 
+const update0011Provider = async (apiKey: string) => {
+  for (const tab of providerTabIds) {
+    const list = cards[tab]
+    const providerId = get0011ProviderId(tab)
+    const provider = list.find(p => p.id === providerId)
+    if (provider) {
+      provider.apiKey = apiKey
+      provider.enabled = true
+      console.log(`[Auth] Updated 0011 provider for ${tab} with new API key.`)
+    }
+  }
+  // Persist changes for both tabs
+  await persistProviders('claude');
+  await persistProviders('codex');
+}
+
+let removeProviderRefreshListener: (() => void) | undefined
+
 const setupAuthEventHandlers = () => {
   removeLoginListener?.()
   removeLogoutListener?.()
+  removeProviderRefreshListener?.()
+  
   removeLoginListener = Events.On('auth:login-success', async (event) => {
     const payload = (event?.data ?? null) as AuthUser | null
     userInfo.value = payload ?? null
     isFirstLogin.value = true
     
     if (payload) {
-      const success = await runAutoConfigInBackground(payload)
-      if (success) {
+      // 重新从磁盘加载供应商列表，获取后端创建的 0011 卡片
+      // 注意：SetUserInfo 已经在 Login.vue 中同步等待完成，所以这里后端已经创建好了卡片
+      await loadProvidersFromDisk()
+      
+      const apiKeyData = await runAutoConfigInBackground(payload)
+      if (apiKeyData) {
         markAutoConfigDone(payload)
+        // 不需要再调用 update0011Provider，因为已经从磁盘加载了最新数据
       }
     }
   })
+  
   removeLogoutListener = Events.On('auth:logout', () => {
     userInfo.value = null
     isFirstLogin.value = false
+  })
+  
+  // 监听供应商刷新事件（当用户更新 API Key 时）
+  removeProviderRefreshListener = Events.On('provider:refresh-needed', async () => {
+    await loadProvidersFromDisk()
   })
 }
 
 onMounted(async () => {
   setupAuthEventHandlers()
   await loadAuthInfo()
+  await loadProvidersFromDisk()
   
   // 如果用户已登录且未配置，触发首次自动配置
   if (userInfo.value && !hasAutoConfigured(userInfo.value)) {
-    const success = await runAutoConfigInBackground(userInfo.value)
-    if (success) {
+    const apiKeyData = await runAutoConfigInBackground(userInfo.value)
+    if (apiKeyData) {
       markAutoConfigDone(userInfo.value)
+      await update0011Provider(apiKeyData.token)
     }
   }
   
   void loadUsageHeatmap()
-  await loadProvidersFromDisk()
   await Promise.all(providerTabIds.map(refreshProxyState))
   await Promise.all(providerTabIds.map((tab) => loadProviderStats(tab)))
   await loadAppSettings()
@@ -1332,8 +1389,13 @@ const onTabChange = (idx: number) => {
   selectedIndex.value = idx
   const nextTab = tabs[idx]?.id
   if (nextTab) {
-    void refreshProxyState(nextTab as ProviderTab)
-    void loadProviderStats(nextTab as ProviderTab)
+    const tab = nextTab as ProviderTab
+    
+    // 确保 0011 供应商存在
+    ensure0011Provider(tab)
+    
+    void refreshProxyState(tab)
+    void loadProviderStats(tab)
   }
 }
 

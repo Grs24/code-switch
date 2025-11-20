@@ -12,7 +12,7 @@ interface AuthUser {
   [key: string]: any
 }
 
-interface ApiKeyData {
+export interface ApiKeyData {
   id: number
   token: string
   status: number
@@ -38,28 +38,28 @@ export async function fetchUserApiKey(userInfo: AuthUser | null): Promise<ApiKey
 /**
  * 后台静默执行自动配置
  * @param userInfo 用户信息
- * @returns 配置是否成功
+ * @returns 配置成功则返回 API Key 数据，否则返回 null
  */
-export async function runAutoConfigInBackground(userInfo: AuthUser | null): Promise<boolean> {
-  if (!userInfo) return false
+export async function runAutoConfigInBackground(userInfo: AuthUser | null): Promise<ApiKeyData | null> {
+  if (!userInfo) return null
   
   try {
     const apiKeyData = await fetchUserApiKey(userInfo)
-    if (!apiKeyData?.token) return false
+    if (!apiKeyData?.token) return null
     
     const baseURL = await GetDefaultBaseURL().catch(() => '')
     const configResult = await ConfigureAll(apiKeyData.token, baseURL)
     
     if (configResult.success) {
       console.log('[AutoConfig] 配置成功')
-      return true
+      return apiKeyData
     } else {
       console.warn('[AutoConfig] 配置失败:', configResult.errors)
-      return false
+      return null
     }
   } catch (error) {
     console.error('[AutoConfig] 配置异常:', error)
-    return false
+    return null
   }
 }
 

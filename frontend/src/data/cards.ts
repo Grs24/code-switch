@@ -14,19 +14,11 @@ export type AutomationCard = {
   modelMapping?: Record<string, string>
 }
 
+import { create0011Provider } from '../config/provider0011'
+
 export const automationCardGroups: Record<'claude' | 'codex', AutomationCard[]> = {
   claude: [
-    {
-      id: 100,
-      name: '0011',
-      apiUrl: 'https://0011.ai',
-      apiKey: '',
-      officialSite: 'https://0011.ai',
-      icon: 'aicoding',
-      tint: 'rgba(10, 132, 255, 0.14)',
-      accent: '#0aff5cff',
-      enabled: false,
-    },
+    create0011Provider('claude'),
     {
       id: 101,
       name: 'AICoding.sh',
@@ -62,6 +54,7 @@ export const automationCardGroups: Record<'claude' | 'codex', AutomationCard[]> 
     },
   ],
   codex: [
+    create0011Provider('codex'),
     {
       id: 201,
       name: 'AICoding.sh',

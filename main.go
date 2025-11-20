@@ -69,9 +69,12 @@ func main() {
 	}
 	authService := services.NewAuthService()
 	providerService := services.NewProviderService()
+	authService.SetProviderService(providerService)
 	providerRelay := services.NewProviderRelayService(providerService, ":18100")
 	claudeSettings := services.NewClaudeSettingsService(providerRelay.Addr())
 	codexSettings := services.NewCodexSettingsService(providerRelay.Addr())
+	authService.SetClaudeSettings(claudeSettings)
+	authService.SetCodexSettings(codexSettings)
 	autoConfigService := services.NewAutoConfigService(authService, claudeSettings, codexSettings, providerRelay.Addr())
 	logService := services.NewLogService()
 	autoStartService := services.NewAutoStartService()

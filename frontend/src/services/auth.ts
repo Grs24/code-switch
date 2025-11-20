@@ -67,6 +67,14 @@ export async function GetAICodeBaseURL(): Promise<string> {
 }
 
 /**
+ * 刷新 0011 供应商的 API Key
+ * 用于用户在界面上更新 API Key 后同步到供应商卡片
+ */
+export async function RefreshProviderApiKey(): Promise<void> {
+  return Call.ByName(`${SERVICE_NAME}.RefreshProviderApiKey`)
+}
+
+/**
  * 获取订阅页面 URL
  */
 export async function GetSubscriptionURL(): Promise<string> {

@@ -150,6 +150,14 @@ const updateApiKey = async () => {
       const result = await request.post('/aicoding0011/xapi/user/token', { status: 1 })
       apiKeyData.value = result
     }
+
+    // 更新成功后，同步刷新 0011 供应商卡片的 API Key
+    const { RefreshProviderApiKey } = await import('../../services/auth')
+    await RefreshProviderApiKey()
+    
+    // 触发事件，通知主界面重新加载供应商列表
+    const { Events } = await import('@wailsio/runtime')
+    Events.Emit('provider:refresh-needed', { timestamp: Date.now() })
   } catch (error) {
     console.error('更新 API Key 失败:', error)
   } finally {
