@@ -11,6 +11,7 @@ const releaseInfo = ref<ReleaseInfo | null>(null);
 const isChecking = ref(false);
 const showModal = ref(false);
 const dismissed = ref(false);
+const dismissedVersion = ref<string | null>(null); // 记录用户 dismiss 的版本号
 let intervalId: number | null = null;
 
 const hasUpdate = computed(() => releaseInfo.value?.has_update ?? false);
@@ -31,19 +32,29 @@ const publishedDate = computed(() => {
   }
 });
 
-const checkUpdate = async () => {
+const checkUpdate = async (forceShow = false) => {
   if (isChecking.value) return;
+  
   isChecking.value = true;
   try {
     const result = await checkForUpdates();
     releaseInfo.value = result;
 
-    // Only show modal if it wasn't dismissed and there's an update
-    if (!dismissed.value && result?.has_update) {
+    if (forceShow && result?.has_update) {
+      dismissed.value = false;
+      dismissedVersion.value = null;
+    }
+
+    const shouldShow = result?.has_update && 
+                       !dismissed.value && 
+                       (forceShow || dismissedVersion.value !== result.version);
+    
+    if (shouldShow) {
       showModal.value = true;
     }
   } catch (error) {
     console.error("Failed to check for updates:", error);
+    throw error;
   } finally {
     isChecking.value = false;
   }
@@ -51,7 +62,7 @@ const checkUpdate = async () => {
 
 const openReleaseUrl = () => {
   if (releaseUrl.value) {
-    Browser.OpenURL(releaseUrl.value).catch(console.error);
+    Browser.OpenURL(releaseUrl.value).catch((err) => console.error("Failed to open URL:", err));
   }
 };
 
@@ -63,6 +74,9 @@ const downloadUpdate = () => {
 const closeModal = () => {
   showModal.value = false;
   dismissed.value = true;
+  if (releaseInfo.value?.version) {
+    dismissedVersion.value = releaseInfo.value.version;
+  }
 };
 
 onMounted(() => {

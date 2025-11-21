@@ -9,11 +9,11 @@
         <p class="global-eyebrow">{{ t('components.main.hero.eyebrow') }}</p>
       </div>
       <button
-        class="ghost-icon"
+        class="ghost-icon github-icon"
         :class="{ 'github-upgrade': hasUpdateAvailable, 'checking': isCheckingUpdate }"
         :data-tooltip="hasUpdateAvailable ? t('components.main.controls.updateAvailable') : t('components.main.controls.checkUpdate')"
         :disabled="isCheckingUpdate"
-        @click="handleUpdateClick"
+        @click.stop="handleUpdateClick"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
@@ -754,19 +754,20 @@ const checkForUpdates = async () => {
 }
 
 const handleUpdateClick = async () => {
-  if (isCheckingUpdate.value || !updateNotificationRef.value) return
+  if (isCheckingUpdate.value) return
+  
+  if (!updateNotificationRef.value) {
+    showToast(t('components.general.update.checkFailed'), 'error')
+    return
+  }
   
   isCheckingUpdate.value = true
   try {
-    // Trigger update check which will show modal if update available
-    await updateNotificationRef.value.checkUpdate()
+    await updateNotificationRef.value.checkUpdate(true)
     
-    // Update local state
     if (updateNotificationRef.value.hasUpdate) {
       hasUpdateAvailable.value = true
-      // Modal will be shown automatically by UpdateNotification component
     } else {
-      // Show "up to date" toast
       showToast(t('components.general.update.upToDate'))
     }
   } catch (error) {
@@ -1086,6 +1087,12 @@ const setupAuthEventHandlers = () => {
       if (apiKeyData) {
         markAutoConfigDone(payload)
         // 不需要再调用 update0011Provider，因为已经从磁盘加载了最新数据
+
+        // 自动开启托管开关
+        await enableProxy('claude')
+        await enableProxy('codex')
+        proxyStates['claude'] = true
+        proxyStates['codex'] = true
       }
     }
   })
@@ -1112,6 +1119,12 @@ onMounted(async () => {
     if (apiKeyData) {
       markAutoConfigDone(userInfo.value)
       await update0011Provider(apiKeyData.token)
+
+      // 自动开启托管开关
+      await enableProxy('claude')
+      await enableProxy('codex')
+      proxyStates['claude'] = true
+      proxyStates['codex'] = true
     }
   }
   
@@ -1363,6 +1376,11 @@ const onTabChange = (idx: number) => {
     
     // 确保 0011 供应商存在
     ensure0011Provider(tab)
+    
+    // 切换 tab 时，如果本地状态显示应该开启，则尝试开启
+    if (proxyStates[tab]) {
+      enableProxy(tab).catch(console.error)
+    }
     
     void refreshProxyState(tab)
     void loadProviderStats(tab)

@@ -1227,6 +1227,7 @@ html.dark .ghost-icon.github-upgrade:hover {
 .ghost-icon.checking {
   opacity: 0.6;
   cursor: not-allowed;
+  pointer-events: none;
 }
 
 .ghost-icon.checking svg {
@@ -1245,6 +1246,7 @@ html.dark .ghost-icon.github-upgrade:hover {
 .ghost-icon:disabled {
   cursor: not-allowed;
   opacity: 0.5;
+  pointer-events: none;
 }
 
 
