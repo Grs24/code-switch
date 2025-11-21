@@ -71,18 +71,24 @@ wails3 task dev
    ```
 
 ## 发布
-脚本 `scripts/publish_release.sh v0.1.0` 将自动打包并上传以下资产（macOS 会分别构建 arm64 与 amd64）：
-- `codeswitch-macos-arm64.zip`
-- `codeswitch-macos-amd64.zip`
-- `codeswitch-arm64-installer.exe`
-- `codeswitch.exe`
 
-若要手动发布，可执行：
+### 1. 准备发布说明
+在项目根目录创建或更新 `RELEASE_NOTES.md` 文件，写入本次更新的内容（支持 Markdown）。
+
+### 2. 运行发布脚本
+脚本 `scripts/publish_r2.sh <version>` 将自动完成以下步骤：
+1. 更新代码中的版本号
+2. 构建前端资源
+3. 打包 macOS (arm64 & amd64) 和 Windows (amd64) 应用
+4. 上传所有安装包到 Cloudflare R2
+5. 生成并上传 `latest.json`（包含版本信息和发布说明）
+
 ```bash
-wails3 task package
-env ARCH=amd64 wails3 task windows:package
-scripts/publish_release.sh
+# 示例：发布 v1.0.0
+./scripts/publish_r2.sh v1.0.0
 ```
+
+发布完成后，用户打开应用时会自动检测到新版本并显示更新弹窗。
 
 ## 常见问题
 - 若 `.app` 无法打开，先执行 `wails3 task common:update:build-assets` 后再构建。

@@ -6,7 +6,9 @@ import { Dialogs } from '@wailsio/runtime'
 import ListItem from '../Setting/ListRow.vue'
 import LanguageSwitcher from '../Setting/LanguageSwitcher.vue'
 import ThemeSetting from '../Setting/ThemeSetting.vue'
+import UpdateNotification from './UpdateNotification.vue'
 import { fetchAppSettings, saveAppSettings, type AppSettings } from '../../services/appSettings'
+import { fetchCurrentVersion } from '../../services/version'
 import {
   fetchConfigImportStatus,
   fetchConfigImportStatusForFile,
@@ -28,6 +30,9 @@ const saveBusy = ref(false)
 const importStatus = ref<ConfigImportStatus | null>(null)
 const customImportStatus = ref<ConfigImportStatus | null>(null)
 const importBusy = ref(false)
+const currentVersion = ref('')
+const updateNotificationRef = ref<InstanceType<typeof UpdateNotification> | null>(null)
+const checkingUpdate = ref(false)
 
 const goBack = () => {
   router.push('/')
@@ -71,7 +76,33 @@ const persistAppSettings = async () => {
 onMounted(() => {
   void loadAppSettings()
   void loadImportStatus()
+  void loadVersion()
 })
+
+const loadVersion = async () => {
+  try {
+    currentVersion.value = await fetchCurrentVersion()
+  } catch (error) {
+    console.error('Failed to load version:', error)
+  }
+}
+
+const handleCheckUpdate = async () => {
+  if (checkingUpdate.value || !updateNotificationRef.value) return
+  
+  checkingUpdate.value = true
+  try {
+    await updateNotificationRef.value.checkUpdate()
+    if (!updateNotificationRef.value.hasUpdate) {
+      showToast(t('components.general.update.upToDate'))
+    }
+  } catch (error) {
+    console.error('Failed to check for updates:', error)
+    showToast(t('components.general.update.checkFailed'), 'error')
+  } finally {
+    checkingUpdate.value = false
+  }
+}
 
 const loadImportStatus = async () => {
   try {
@@ -265,6 +296,8 @@ const handleSecondaryImportAction = async () => {
     </div>
 
     <div class="general-page">
+      <UpdateNotification ref="updateNotificationRef" />
+      
       <section>
         <h2 class="mac-section-title">{{ $t('components.general.title.application') }}</h2>
         <div class="mac-panel">
@@ -349,6 +382,25 @@ const handleSecondaryImportAction = async () => {
           </ListItem>
           <ListItem :label="$t('components.general.label.theme')">
             <ThemeSetting />
+          </ListItem>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="mac-section-title">{{ $t('components.general.title.about') }}</h2>
+        <div class="mac-panel">
+          <ListItem 
+            :label="$t('components.general.label.version')" 
+            :sub-label="currentVersion"
+          >
+            <BaseButton 
+              size="sm" 
+              variant="outline" 
+              :disabled="checkingUpdate"
+              @click="handleCheckUpdate"
+            >
+              {{ checkingUpdate ? $t('components.general.update.checking') : $t('components.general.update.check') }}
+            </BaseButton>
           </ListItem>
         </div>
       </section>

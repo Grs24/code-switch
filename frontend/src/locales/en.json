@@ -81,6 +81,8 @@
         "streamOff": "Not Stream"
       },
       "controls": {
+        "checkUpdate": "Check for Updates",
+        "updateAvailable": "New version available, click to download",
         "github": "Open project GitHub",
         "githubUpdate": "Open GitHub (update available)",
         "theme": "Toggle theme",
@@ -224,6 +226,7 @@
         "application": "Apply settings",
         "exterior": "Appearance settings",
         "power": "Permission settings",
+        "about": "About",
         "update": "Application update"
       },
       "label": {
@@ -236,7 +239,8 @@
         "theme": "Theme mode",
         "heatmap": "Show dashboard heatmap",
         "homeTitle": "Show home title",
-        "autoStart": "Launch at login"
+        "autoStart": "Launch at login",
+        "version": "Current version"
       },
       "subLabel": {
         "sb_assistant_access": "Accessibility permission is required to operate clipboard contents",
@@ -263,6 +267,16 @@
         "clear": "Clear selection",
         "reupload": "Upload another JSON",
         "missingDefault": "No cc-switch config detected. Upload a JSON manually to import."
+      },
+      "update": {
+        "available": "Update Available",
+        "newVersion": "Latest Version",
+        "download": "Download Update",
+        "dismiss": "Remind Later",
+        "check": "Check for Updates",
+        "checking": "Checking...",
+        "upToDate": "You're up to date",
+        "checkFailed": "Failed to check for updates"
       }
     },
     "mcp": {

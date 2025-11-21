@@ -58,12 +58,12 @@
         </div>
       </div>
 
-      <AutoConfigSection
+      <!-- <AutoConfigSection
         v-if="apiKeyData"
         ref="autoConfigRef"
         :api-key-data="apiKeyData"
         :user-info="userInfo"
-      />
+      /> -->
 
       <div class="user-info-actions">
         <BaseButton variant="danger" @click="handleLogout" :disabled="logoutLoading">

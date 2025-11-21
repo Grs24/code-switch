@@ -82,6 +82,8 @@
         "streamOff": "非流"
       },
       "controls": {
+        "checkUpdate": "检查更新",
+        "updateAvailable": "发现新版本，点击下载",
         "github": "打开 GitHub",
         "githubUpdate": "打开 GitHub（发现新版本）",
         "theme": "切换主题",
@@ -225,6 +227,7 @@
         "power": "权限设置",
         "application": "应用设置",
         "exterior": "外观设置",
+        "about": "关于",
         "update": "应用更新"
       },
       "label": {
@@ -237,7 +240,8 @@
         "homeTitle": "显示首页标题",
         "autoStart": "开机自启动",
         "automatic_up": "自动检查更新",
-        "next_up": "下次启动自动检查更新"
+        "next_up": "下次启动自动检查更新",
+        "version": "当前版本"
       },
       "subLabel": {
         "sb_assistant_access": "需要无障碍访问权限来操作剪切板内容",
@@ -264,6 +268,16 @@
         "clear": "清除选择",
         "reupload": "重新上传",
         "missingDefault": "未检测到 cc-switch 配置文件，可手动上传 JSON 进行导入"
+      },
+      "update": {
+        "available": "发现新版本",
+        "newVersion": "最新版本",
+        "download": "下载更新",
+        "dismiss": "稍后提醒",
+        "check": "检查更新",
+        "checking": "检查中...",
+        "upToDate": "已是最新版本",
+        "checkFailed": "检查更新失败"
       }
     },
     "mcp": {

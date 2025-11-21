@@ -1,25 +1,22 @@
 <template>
   <div class="main-shell">
+    <!-- Update Notification Modal -->
+    <UpdateNotification ref="updateNotificationRef" />
+    
     <div class="global-actions">
       <div class="global-eyebrow-with-logo">
         <img src="/logo.svg" alt="0011 Logo" class="brand-logo" />
         <p class="global-eyebrow">{{ t('components.main.hero.eyebrow') }}</p>
       </div>
       <button
-        class="ghost-icon github-icon"
-        :class="{ 'github-upgrade': hasUpdateAvailable }"
-        :data-tooltip="hasUpdateAvailable ? t('components.main.controls.githubUpdate') : t('components.main.controls.github')"
-        @click="openGitHub"
+        class="ghost-icon"
+        :class="{ 'github-upgrade': hasUpdateAvailable, 'checking': isCheckingUpdate }"
+        :data-tooltip="hasUpdateAvailable ? t('components.main.controls.updateAvailable') : t('components.main.controls.checkUpdate')"
+        :disabled="isCheckingUpdate"
+        @click="handleUpdateClick"
       >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path
-            d="M9 19c-4.5 1.5-4.5-2.5-6-3m12 5v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0018 3.77 5.07 5.07 0 0017.91 1S16.73.65 14 2.48a13.38 13.38 0 00-5 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 3.77a5.44 5.44 0 00-1.5 3.76c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
         </svg>
       </button>
       <button
@@ -498,18 +495,20 @@ import ModelMappingEditor from '../common/ModelMappingEditor.vue'
 import SubscriptionButton from '../Subscription/SubscriptionButton.vue'
 import UserButton from '../Auth/UserButton.vue'
 import QuotaOverviewCard from '../Quota/QuotaOverviewCard.vue'
+import UpdateNotification from '../General/UpdateNotification.vue'
 import { LoadProviders, SaveProviders } from '../../../bindings/codeswitch/services/providerservice'
 import { GetUserInfo, IsLogin } from '../../services/auth'
 import { request } from '../../utils/request'
 import { fetchProxyStatus, enableProxy, disableProxy } from '../../services/claudeSettings'
 import { fetchHeatmapStats, fetchProviderDailyStats, type ProviderDailyStat } from '../../services/logs'
-import { fetchCurrentVersion } from '../../services/version'
+import { fetchCurrentVersion, checkForUpdates as checkVersionService } from '../../services/version'
 import { fetchAppSettings, type AppSettings } from '../../services/appSettings'
 import { getCurrentTheme, setTheme, type ThemeMode } from '../../utils/ThemeManager'
 import { useRouter } from 'vue-router'
 import { runAutoConfigInBackground, hasAutoConfigured, markAutoConfigDone, type ApiKeyData } from '../../services/autoConfigService'
 import { create0011Provider, get0011ProviderId, is0011Provider } from '../../config/provider0011'
 import { useLogout } from '../../composables/useLogout'
+import { showToast } from '../../utils/toast'
 
 const { t, locale } = useI18n()
 const router = useRouter()
@@ -522,8 +521,7 @@ const resolvedTheme = computed(() => {
   return themeMode.value
 })
 const themeIcon = computed(() => (resolvedTheme.value === 'dark' ? 'moon' : 'sun'))
-const releasePageUrl = 'https://github.com/daodao97/code-switch/releases'
-const releaseApiUrl = 'https://api.github.com/repos/daodao97/code-switch/releases/latest'
+
 
 const HEATMAP_DAYS = DEFAULT_HEATMAP_DAYS
 const usageHeatmap = ref<UsageHeatmapWeek[]>(generateFallbackUsageHeatmap(HEATMAP_DAYS))
@@ -557,6 +555,9 @@ const showHomeTitle = ref(true)
 const mcpIcon = lobeIcons['mcp'] ?? ''
 const appVersion = ref('')
 const hasUpdateAvailable = ref(false)
+const updateUrl = ref('')
+const isCheckingUpdate = ref(false)
+const updateNotificationRef = ref<InstanceType<typeof UpdateNotification> | null>(null)
 
 // 用户登录相关状态
 interface AuthUser {
@@ -651,6 +652,10 @@ const clamp = (value: number, min: number, max: number) => {
   return Math.min(Math.max(value, min), max)
 }
 
+const normalizeProviderKey = (provider: string): string => {
+  return provider.toLowerCase().replace(/[^a-z0-9]/g, '')
+}
+
 const TOOLTIP_DEFAULT_WIDTH = 220
 const TOOLTIP_DEFAULT_HEIGHT = 120
 const TOOLTIP_VERTICAL_OFFSET = 12
@@ -738,21 +743,37 @@ const checkForUpdates = async () => {
   }
 
   try {
-    const resp = await fetch(releaseApiUrl, {
-      headers: {
-        Accept: 'application/vnd.github+json',
-      },
-    })
-    if (!resp.ok) {
-      return
-    }
-    const data = await resp.json()
-    const latestTag = data?.tag_name ?? ''
-    if (latestTag && compareVersions(appVersion.value || '0.0.0', latestTag) < 0) {
+    const releaseInfo = await checkVersionService()
+    if (releaseInfo?.has_update) {
       hasUpdateAvailable.value = true
+      updateUrl.value = releaseInfo.url
     }
   } catch (error) {
-    console.error('failed to fetch release info', error)
+    console.error('failed to check for updates', error)
+  }
+}
+
+const handleUpdateClick = async () => {
+  if (isCheckingUpdate.value || !updateNotificationRef.value) return
+  
+  isCheckingUpdate.value = true
+  try {
+    // Trigger update check which will show modal if update available
+    await updateNotificationRef.value.checkUpdate()
+    
+    // Update local state
+    if (updateNotificationRef.value.hasUpdate) {
+      hasUpdateAvailable.value = true
+      // Modal will be shown automatically by UpdateNotification component
+    } else {
+      // Show "up to date" toast
+      showToast(t('components.general.update.upToDate'))
+    }
+  } catch (error) {
+    console.error('Failed to check for updates:', error)
+    showToast(t('components.general.update.checkFailed'), 'error')
+  } finally {
+    isCheckingUpdate.value = false
   }
 }
 
@@ -774,22 +795,7 @@ const stopUpdateTimer = () => {
   }
 }
 
-const normalizeProviderKey = (value: string) => value?.trim().toLowerCase() ?? ''
 
-const normalizeVersion = (value: string) => value.replace(/^v/i, '').trim()
-
-const compareVersions = (current: string, remote: string) => {
-  const curParts = normalizeVersion(current).split('.').map((part) => parseInt(part, 10) || 0)
-  const remoteParts = normalizeVersion(remote).split('.').map((part) => parseInt(part, 10) || 0)
-  const maxLen = Math.max(curParts.length, remoteParts.length)
-  for (let i = 0; i < maxLen; i++) {
-    const cur = curParts[i] ?? 0
-    const rem = remoteParts[i] ?? 0
-    if (cur === rem) continue
-    return cur < rem ? -1 : 1
-  }
-  return 0
-}
 
 const loadUsageHeatmap = async () => {
 	try {
@@ -1160,11 +1166,6 @@ const toggleTheme = () => {
   setTheme(next)
 }
 
-const openGitHub = () => {
-  Browser.OpenURL(releasePageUrl).catch(() => {
-    console.error('failed to open github')
-  })
-}
 
 type VendorForm = {
   name: string

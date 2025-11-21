@@ -1205,6 +1205,49 @@ html.dark .ghost-icon:hover {
   transform: translateX(-50%) translateY(2px);
 }
 
+/* 更新按钮样式 */
+.ghost-icon.github-upgrade {
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #10b981;
+}
+
+html.dark .ghost-icon.github-upgrade {
+  background: rgba(16, 185, 129, 0.2) !important;
+  color: #34d399;
+}
+
+.ghost-icon.github-upgrade:hover {
+  background: rgba(16, 185, 129, 0.25) !important;
+}
+
+html.dark .ghost-icon.github-upgrade:hover {
+  background: rgba(16, 185, 129, 0.3) !important;
+}
+
+.ghost-icon.checking {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ghost-icon.checking svg {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ghost-icon:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+
 /* 套餐状态按钮 */
 .subscription-btn {
   width: auto !important;
